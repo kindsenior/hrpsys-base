@@ -182,6 +182,10 @@ class Stabilizer
   RTC::InPort<RTC::TimedOrientation3D> m_baseRpyIn;
   RTC::InPort<RTC::TimedBooleanSeq> m_contactStatesIn;
   RTC::InPort<RTC::TimedDoubleSeq> m_controlSwingSupportTimeIn;
+
+  // for reference force from seq added by k-kojima
+  std::vector<RTC::TimedDoubleSeq> m_wrenches;
+  std::vector<RTC::InPort<RTC::TimedDoubleSeq> *> m_wrenchesIn;
   
   // </rtc-template>
 
