@@ -371,10 +371,17 @@ RTC::ReturnCode_t Stabilizer::onExecute(RTC::UniqueId ec_id)
   }
 
   // for reference force from seq added by k-kojima
-  for (size_t i = 0; i < m_wrenchesIn.size(); ++i) {
-      if ( m_wrenchesIn[i]->isNew() ) {
-          m_wrenchesIn[i]->read();
+  {
+      static int j = 0;
+      for (size_t i = 0; i < m_wrenchesIn.size(); ++i) {
+          if ( m_wrenchesIn[i]->isNew() ) {
+              m_wrenchesIn[i]->read();
+              if ( j % 100 == 0 && i == 0 ){
+                  std::cerr << j << " " << m_wrenches[0].data[2] << " " << m_wrenches[1].data[2] << std::endl;
+              }
+          }
       }
+      ++j;
   }
 
   if (is_legged_robot) {
