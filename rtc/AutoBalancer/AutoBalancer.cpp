@@ -56,6 +56,7 @@ AutoBalancer::AutoBalancer(RTC::Manager* manager)
       m_accRefOut("accRef", m_accRef),
       m_contactStatesOut("contactStates", m_contactStates),
       m_controlSwingSupportTimeOut("controlSwingSupportTime", m_controlSwingSupportTime),
+      m_cogOut("cogOut", m_cog),
       m_AutoBalancerServicePort("AutoBalancerService"),
       // </rtc-template>
       move_base_gain(0.1),
@@ -93,6 +94,7 @@ RTC::ReturnCode_t AutoBalancer::onInitialize()
     addOutPort("accRef", m_accRefOut);
     addOutPort("contactStates", m_contactStatesOut);
     addOutPort("controlSwingSupportTime", m_controlSwingSupportTimeOut);
+    addOutPort("cogOut", m_cogOut);
   
     // Set service provider to Ports
     m_AutoBalancerServicePort.registerProvider("service0", "AutoBalancerService", m_service0);
@@ -138,7 +140,7 @@ RTC::ReturnCode_t AutoBalancer::onInitialize()
 
     zmp_interpolate_time = 1.0;
     zmp_interpolator = new interpolator(6, m_dt);
-    transition_interpolator = new interpolator(1, m_dt);
+    transition_interpolator = new interpolator(1, m_dt, interpolator::HOFFARBIB, 1);
 
     // setting from conf file
     // GaitGenerator requires abc_leg_offset and abc_stride_parameter in robot conf file
@@ -288,7 +290,6 @@ RTC::ReturnCode_t AutoBalancer::onDeactivated(RTC::UniqueId ec_id)
   std::cout << "AutoBalancer::onDeactivated(" << ec_id << ")" << std::endl;
   Guard guard(m_mutex);
   if (control_mode == MODE_ABC) {
-    stopABCparam();
     control_mode = MODE_SYNC_TO_IDLE;
     double tmp_ratio = 0.0;
     transition_interpolator->go(&tmp_ratio, m_dt, true); // sync in one controller loop
@@ -419,11 +420,17 @@ RTC::ReturnCode_t AutoBalancer::onExecute(RTC::UniqueId ec_id)
       m_zmp.data.y = rel_ref_zmp(1);
       m_zmp.data.z = rel_ref_zmp(2);
       m_zmp.tm = m_qRef.tm;
+      // cog
+      m_cog.data.x = ref_cog(0);
+      m_cog.data.y = ref_cog(1);
+      m_cog.data.z = ref_cog(2);
+      m_cog.tm = m_qRef.tm;
     }
     m_basePosOut.write();
     m_baseRpyOut.write();
     m_baseTformOut.write();
     m_zmpOut.write();
+    m_cogOut.write();
 
     // reference acceleration
     hrp::Sensor* sen = m_robot->sensor<hrp::RateGyroSensor>("gyrometer");
