@@ -682,12 +682,15 @@ void Stabilizer::getActualParameters ()
         foot_dist_coords_rot(2,2) = 1;
         hrp::Vector3 tau_0_f = foot_dist_coords_rot.transpose() * tau_0; // tau_0'
         // x
-        // right
-        if (tau_0_f(0) > 0) ref_foot_moment[0](0) = tau_0_f(0);
-        else ref_foot_moment[0](0) = 0;
-        // left
-        if (tau_0_f(0) > 0) ref_foot_moment[1](0) = 0;
-        else ref_foot_moment[1](0) = tau_0_f(0);
+        // for reference force from seq added by k-kojima
+        ref_foot_moment[0](0) = tau_0_f(0) * alpha;
+        ref_foot_moment[1](0) = tau_0_f(0) * (1-alpha);
+        // // right
+        // if (tau_0_f(0) > 0) ref_foot_moment[0](0) = tau_0_f(0);
+        // else ref_foot_moment[0](0) = 0;
+        // // left
+        // if (tau_0_f(0) > 0) ref_foot_moment[1](0) = 0;
+        // else ref_foot_moment[1](0) = tau_0_f(0);
         // y
         ref_foot_moment[0](1) = tau_0_f(1) * alpha;
         ref_foot_moment[1](1) = tau_0_f(1) * (1-alpha);
