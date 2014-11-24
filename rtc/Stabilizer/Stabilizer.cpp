@@ -645,14 +645,22 @@ void Stabilizer::getActualParameters ()
           alpha = difp.dot(new_refzmp-ledge_foot)/difp.squaredNorm();
         }
       }
+
+      // for reference force from seq added by k-kojima
+      double gamma = alpha;
+      double beta = m_wrenches[0].data[2] / ( m_wrenches[0].data[2] + m_wrenches[1].data[2] );
+      double steepness = 4; // change ration from alpha to beta (steepness >= 4)
+      double r = - 1/(1+exp(-6*steepness*(gamma-1+1/steepness))) + 1/(1+exp(-6*steepness*(gamma-1/steepness)));
+      alpha = r * beta + ( 1 - r ) * gamma;
+
       ref_foot_force[0] = hrp::Vector3(0,0, alpha * 9.8 * total_mass);
       ref_foot_force[1] = hrp::Vector3(0,0, (1-alpha) * 9.8 * total_mass);
 
       // for reference force from seq added by k-kojima
       // if( m_wrenchesIn[0]->isNew() ){
       //     std::cerr << "connected" << std::endl;
-          ref_foot_force[0] = hrp::Vector3(0,0, m_wrenches[1].data[2]);// right
-          ref_foot_force[1] = hrp::Vector3(0,0, m_wrenches[0].data[2]);// left
+      // ref_foot_force[0] = hrp::Vector3(0,0, m_wrenches[1].data[2]);// right
+      // ref_foot_force[1] = hrp::Vector3(0,0, m_wrenches[0].data[2]);// left
       // }
 
       for (size_t i = 0; i < 2; i++) {
