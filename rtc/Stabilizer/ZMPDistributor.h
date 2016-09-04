@@ -580,8 +580,14 @@ public:
         // QP
         double norm_weight = 1e-7;
         // double cop_weight = 1e-3;
-        //double cop_weight = 1;//fall
-        double cop_weight = 0.5;//fall
+        // double cop_weight = 5;//fall
+        // double cop_weight = 2;//pushed->fall
+        // double cop_weight = 1.5;//pushed->fall
+        // double cop_weight = 1.4;// fall or cop not move
+        double cop_weight = 1.3;//stand. cop not move
+        // double cop_weight = 1.2;//stand. cop not move
+        // double cop_weight = 1;//stand. cop not move
+        // double cop_weight = 0.5;//forward slip
         static int i = 0;
         if(i%500 == 0) std::cerr << "cop_weight: " << cop_weight << std::endl;
         ++i;
