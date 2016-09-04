@@ -824,7 +824,8 @@ void Stabilizer::getActualParameters ()
           if (!is_feedback_control_enable[i]) continue;
           hrp::Link* target = m_robot->link(ikp.target_name);
           ee_pos.push_back(target->p + target->R * ikp.localp);
-          cop_pos.push_back(target->p + target->R * ikp.localCOPPos);
+          // cop_pos.push_back(target->p + target->R * ikp.localCOPPos);
+          cop_pos.push_back(target->p + hrp::Vector3(-m_ref_wrenches[i].data[4]/m_ref_wrenches[i].data[2],m_ref_wrenches[i].data[3]/m_ref_wrenches[i].data[2],0));
           ee_rot.push_back(target->R * ikp.localR);
           ee_name.push_back(ikp.ee_name);
           limb_gains.push_back(ikp.swing_support_gain);

@@ -579,8 +579,14 @@ public:
 
         // QP
         double norm_weight = 1e-7;
-        double cop_weight = 1e-3;
+        // double cop_weight = 1e-3;
+        //double cop_weight = 1;//fall
+        double cop_weight = 0.5;//fall
+        static int i = 0;
+        if(i%500 == 0) std::cerr << "cop_weight: " << cop_weight << std::endl;
+        ++i;
         double ref_force_weight = 0;// 1e-3;
+        // double ref_force_weight = 1e-3;// 1e-3;
         hrp::dvector total_fm(3);
         total_fm(0) = total_fz;
         total_fm(1) = 0;
