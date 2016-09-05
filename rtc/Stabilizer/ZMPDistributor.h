@@ -584,7 +584,9 @@ public:
         // double cop_weight = 2;//pushed->fall
         // double cop_weight = 1.5;//pushed->fall
         // double cop_weight = 1.4;// fall or cop not move
-        double cop_weight = 1.3;//stand. cop not move
+        // double cop_weight = 1.3;// fall slowly. cop not move
+        // double cop_weight = 1.25;//stand. cop drift from center
+        double cop_weight = 1.23;
         // double cop_weight = 1.2;//stand. cop not move
         // double cop_weight = 1;//stand. cop not move
         // double cop_weight = 0.5;//forward slip
