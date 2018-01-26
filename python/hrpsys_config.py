@@ -906,6 +906,7 @@ class HrpsysConfigurator(object):
             self.connectLoggerPort(self.st, 'currentBasePos')
             self.connectLoggerPort(self.st, 'currentBaseRpy')
             self.connectLoggerPort(self.st, 'debugData')
+            self.connectLoggerPort(self.st, 'tau')
         if self.el != None:
             self.connectLoggerPort(self.el, 'q')
         if self.rh != None:
