@@ -2061,6 +2061,41 @@ dr=0, dp=0, dw=0, tm=10, wait=True):
         '''
         self.st_svc.stopStabilizer()
 
+    def startPositionTorqueMode(self, pdgain_percentage_dict=None):
+        '''!@brief
+        Start PositionTorque mode
+        '''
+        if pdgain_percentage_dict==None:
+            # pdgain_percentage_dict={"RLEG_JOINT0":[5,70],"RLEG_JOINT1":[2,20],"RLEG_JOINT2":[5,25],"RLEG_JOINT3":[1,10],"RLEG_JOINT4":[0.1,7],"RLEG_JOINT5":[0.05,3],
+            #                         "LLEG_JOINT0":[5,70],"LLEG_JOINT1":[2,20],"LLEG_JOINT2":[5,25],"LLEG_JOINT3":[1,10],"LLEG_JOINT4":[0.1,7],"LLEG_JOINT5":[0.05,3]}
+            pdgain_percentage_dict={"RLEG_JOINT0":[5,70],"RLEG_JOINT1":[30,70],"RLEG_JOINT2":[10,50],"RLEG_JOINT3":[5,10],"RLEG_JOINT4":[0.5,1],"RLEG_JOINT5":[0.1,3],
+                                    "LLEG_JOINT0":[5,70],"LLEG_JOINT1":[30,70],"LLEG_JOINT2":[10,50],"LLEG_JOINT3":[5,10],"LLEG_JOINT4":[0.5,1],"LLEG_JOINT5":[0.1,3]}
+        stp=self.st_svc.getParameter()
+        self._org_stparam=self.st_svc.getParameter()
+        stp.eefm_pos_damping_gain=[[200000 for i in range(3)] for j in range(len(stp.eefm_pos_damping_gain))]
+        stp.eefm_rot_damping_gain=[[200000 for i in range(3)] for j in range(len(stp.eefm_pos_damping_gain))]
+        stp.eefm_swing_pos_damping_gain = stp.eefm_pos_damping_gain[0] # same with support leg
+        stp.eefm_swing_rot_damping_gain = stp.eefm_rot_damping_gain[0] # same with support leg
+        self.st_svc.setParameter(stp)
+
+        self.rh_svc.setServoGainPercentage("all",100)
+        self.rh_svc.setJointControlMode("all",RobotHardwareService_idl._0_OpenHRP.RobotHardwareService.POSITION_TORQUE)
+        self.rh_svc.setServoTorqueGainPercentage("all",100)
+        time.sleep(1)
+        [(self.rh_svc.setServoPGainPercentage(key,pdgains[0]),self.rh_svc.setServoDGainPercentage(key,pdgains[1])) for key,pdgains in pdgain_percentage_dict.items()]
+
+    def stopPositionTorqueMode(self):
+        '''!@brief
+        Stop PositionTorque mode
+        '''
+        self.rh_svc.setServoGainPercentage("all",10)
+        time.sleep(1)
+        self.rh_svc.setServoGainPercentage("all",100)
+        time.sleep(1)
+        self.rh_svc.setServoTorqueGainPercentage("all",0)
+        self.rh_svc.setJointControlMode("all",RobotHardwareService_idl._0_OpenHRP.RobotHardwareService.POSITION)
+        self.st_svc.setParameter(self._org_stparam)
+
     def startImpedance_315_4(self, arm,
                        M_p = 100.0,
                        D_p = 100.0,
