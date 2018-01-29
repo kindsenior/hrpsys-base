@@ -655,7 +655,7 @@ RTC::ReturnCode_t Stabilizer::onExecute(RTC::UniqueId ec_id)
     if (is_legged_robot) {
       for ( int i = 0; i < m_robot->numJoints(); i++ ){
         m_qRef.data[i] = m_robot->joint(i)->q;
-        //m_tau.data[i] = m_robot->joint(i)->u;
+        m_tau.data[i] = m_robot->joint(i)->u;
       }
       m_zmp.data.x = rel_act_zmp(0);
       m_zmp.data.y = rel_act_zmp(1);
@@ -689,7 +689,7 @@ RTC::ReturnCode_t Stabilizer::onExecute(RTC::UniqueId ec_id)
       m_actContactStatesOut.write();
       m_COPInfo.tm = m_qRef.tm;
       m_COPInfoOut.write();
-      //m_tauOut.write();
+      m_tauOut.write();
       // for debug output
       m_originRefZmp.data.x = ref_zmp(0); m_originRefZmp.data.y = ref_zmp(1); m_originRefZmp.data.z = ref_zmp(2);
       m_originRefCog.data.x = ref_cog(0); m_originRefCog.data.y = ref_cog(1); m_originRefCog.data.z = ref_cog(2);
@@ -1664,6 +1664,8 @@ void Stabilizer::calcEEForceMomentControl() {
           }
         }
       }
+
+      calcTorque();
 }
 
 // Swing ee compensation.
@@ -2803,12 +2805,19 @@ void Stabilizer::calcTorque ()
   //   // std::cerr << ":aa "; rats::print_matrix(std::cerr, aa);
   //   // std::cerr << ":dv "; rats::print_vector(std::cerr, dv);
   // }
-  for (size_t j = 0; j < 2; j++) {
-    hrp::JointPathEx jm = hrp::JointPathEx(m_robot, m_robot->rootLink(), m_robot->sensor<hrp::ForceSensor>(stikp[j].sensor_name)->link, dt);
+  // for (size_t j = 0; j < 2; j++) {//numContacts
+    // hrp::JointPathEx jm = hrp::JointPathEx(m_robot, m_robot->rootLink(), m_robot->sensor<hrp::ForceSensor>(stikp[j].sensor_name)->link, dt);
+  for (size_t j = 0; j < stikp.size(); j++) {
+    STIKParam& ikp = stikp[j];
+    hrp::Link* target = m_robot->link(ikp.target_name);
+    size_t idx = contact_states_index_map[ikp.ee_name];
+    hrp::JointPathEx jm = hrp::JointPathEx(m_robot, m_robot->rootLink(), target, dt);
     hrp::dmatrix JJ;
     jm.calcJacobian(JJ);
     hrp::dvector ft(6);
-    for (size_t i = 0; i < 6; i++) ft(i) = contact_ft(i+j*6);
+    // for (size_t i = 0; i < 6; i++) ft(i) = contact_ft(i+j*6);
+    ft.segment(0,3) = ikp.ref_force;// check coordination
+    ft.segment(3,3) = ikp.ref_moment;
     hrp::dvector tq_from_extft(jm.numJoints());
     tq_from_extft = JJ.transpose() * ft;
     // if (loop%200==0) {
