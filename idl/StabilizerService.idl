@@ -3,6 +3,7 @@
  * @brief Services for the stabilizer interface
  */
 #include "AutoBalancerService.idl"
+#include "RobotHardwareService.idl"
 
 module OpenHRP
 {
@@ -81,6 +82,17 @@ module OpenHRP
         double manipulability_limit;
         /// IK loop count
         unsigned short ik_loop_count;
+    };
+
+    /**
+     * @struct JointServoControlParameter
+     * @brief Joint PD Servo Control Parameters
+     */
+    struct JointServoControlParameter {
+        sequence<double> support_pgain;
+        sequence<double> support_dgain;
+        sequence<double> landing_pgain;
+        sequence<double> landing_dgain;
     };
 
     /**
@@ -187,6 +199,9 @@ module OpenHRP
       DblArray3 eefm_swing_pos_damping_gain;
       /// Sequence of all end-effector force/moment distribution weight
       sequence<sequence<double, 6> > eefm_ee_forcemoment_distribution_weight;
+      // For joint servo control parameter
+      RobotHardwareService::JointControlMode joint_control_mode;
+      sequence<JointServoControlParameter> joint_servo_control_parameters;
       // common
       /// Current Stabilizer algorithm
       STAlgorithm st_algorithm;
