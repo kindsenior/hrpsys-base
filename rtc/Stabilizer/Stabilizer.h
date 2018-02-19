@@ -130,6 +130,7 @@ class Stabilizer
   void waitSTTransition();
   // funcitons for calc final torque output
   void calcContactMatrix (hrp::dmatrix& tm, const std::vector<hrp::Vector3>& contact_p);
+  void setSwingSupportJointServoGains();
   void calcExternalForce (const hrp::Vector3& cog, const hrp::Vector3& zmp, const hrp::Matrix33& rot);
   void calcTorque (const hrp::Matrix33& rot);
   void fixLegToCoords (const std::string& leg, const rats::coordinates& coords);
@@ -259,6 +260,7 @@ class Stabilizer
   // </rtc-template>
 
  private:
+  enum cphase {LANDING_PHASE=-1, SWING_PHASE=0, SUPPORT_PHASE=1};
   // Stabilizer Parameters
   struct STIKParam {
     std::string target_name; // Name of end link
@@ -283,6 +285,8 @@ class Stabilizer
     double avoid_gain, reference_gain, max_limb_length, limb_length_margin;
     size_t ik_loop_count;
     // joint servo control parameter
+    cphase contact_phase;
+    double phase_time;
     hrp::dvector support_pgain,support_dgain,landing_pgain,landing_dgain;
   };
   enum cmode {MODE_IDLE, MODE_AIR, MODE_ST, MODE_SYNC_TO_IDLE, MODE_SYNC_TO_AIR} control_mode;
@@ -340,6 +344,7 @@ class Stabilizer
   hrp::Vector3 eefm_swing_pos_damping_gain, eefm_swing_rot_damping_gain;
   // joint servo control
   OpenHRP::RobotHardwareService::JointControlMode joint_control_mode;
+  double swing2landing_transition_time, landing_phase_time, landing2support_transition_time;
   double total_mass, transition_time, cop_check_margin, contact_decision_threshold;
   std::vector<double> cp_check_margin, tilt_margin;
   OpenHRP::StabilizerService::EmergencyCheckMode emergency_check_mode;

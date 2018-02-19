@@ -201,6 +201,9 @@ module OpenHRP
       sequence<sequence<double, 6> > eefm_ee_forcemoment_distribution_weight;
       // For joint servo control parameter
       RobotHardwareService::JointControlMode joint_control_mode;
+      double swing2landing_transition_time;
+      double landing_phase_time;
+      double landing2support_transition_time;
       sequence<JointServoControlParameter> joint_servo_control_parameters;
       // common
       /// Current Stabilizer algorithm
