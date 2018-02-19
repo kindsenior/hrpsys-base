@@ -30,6 +30,8 @@
 #include "../ImpedanceController/RatsMatrix.h"
 #include "../TorqueFilter/IIRFilter.h"
 
+#include "hrpsys/idl/RobotHardwareService.hh"
+
 // </rtc-template>
 
 // Service Consumer stub headers
@@ -238,6 +240,7 @@ class Stabilizer
 
   // CORBA Port declaration
   // <rtc-template block="corbaport_declare">
+  RTC::CorbaPort m_RobotHardwareServicePort;
   
   // </rtc-template>
 
@@ -250,7 +253,8 @@ class Stabilizer
   // Consumer declaration
   // <rtc-template block="consumer_declare">
   StabilizerService_impl m_service0;
-  
+  RTC::CorbaConsumer<OpenHRP::RobotHardwareService> m_robotHardwareService0;
+
   // </rtc-template>
 
  private:
@@ -277,6 +281,8 @@ class Stabilizer
     // IK parameter
     double avoid_gain, reference_gain, max_limb_length, limb_length_margin;
     size_t ik_loop_count;
+    // joint servo control parameter
+    hrp::dvector support_pgain,support_dgain,landing_pgain,landing_dgain;
   };
   enum cmode {MODE_IDLE, MODE_AIR, MODE_ST, MODE_SYNC_TO_IDLE, MODE_SYNC_TO_AIR} control_mode;
   // members
@@ -331,6 +337,8 @@ class Stabilizer
   // Total foot moment around the foot origin coords (relative to foot origin coords)
   hrp::Vector3 ref_total_foot_origin_moment, act_total_foot_origin_moment;
   hrp::Vector3 eefm_swing_pos_damping_gain, eefm_swing_rot_damping_gain;
+  // joint servo control
+  OpenHRP::RobotHardwareService::JointControlMode joint_control_mode;
   double total_mass, transition_time, cop_check_margin, contact_decision_threshold;
   std::vector<double> cp_check_margin, tilt_margin;
   OpenHRP::StabilizerService::EmergencyCheckMode emergency_check_mode;

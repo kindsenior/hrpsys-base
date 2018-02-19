@@ -66,6 +66,7 @@ Stabilizer::Stabilizer(RTC::Manager* manager)
     m_rpyIn("rpy", m_rpy),
     m_zmpRefIn("zmpRef", m_zmpRef),
     m_StabilizerServicePort("StabilizerService"),
+    m_RobotHardwareServicePort("RobotHardwareService"),
     m_basePosIn("basePosIn", m_basePos),
     m_baseRpyIn("baseRpyIn", m_baseRpy),
     m_contactStatesIn("contactStates", m_contactStates),
@@ -102,6 +103,7 @@ Stabilizer::Stabilizer(RTC::Manager* manager)
     st_algorithm(OpenHRP::StabilizerService::TPCC),
     emergency_check_mode(OpenHRP::StabilizerService::NO_CHECK),
     szd(NULL),
+    joint_control_mode(OpenHRP::RobotHardwareService::POSITION),
     // </rtc-template>
     m_debugLevel(0)
 {
@@ -167,9 +169,11 @@ RTC::ReturnCode_t Stabilizer::onInitialize()
   m_StabilizerServicePort.registerProvider("service0", "StabilizerService", m_service0);
   
   // Set service consumers to Ports
+  m_RobotHardwareServicePort.registerConsumer("service0", "RobotHardwareService", m_robotHardwareService0);
   
   // Set CORBA Service Ports
   addPort(m_StabilizerServicePort);
+  addPort(m_RobotHardwareServicePort);
   
   // </rtc-template>
   RTC::Properties& prop = getProperties();
@@ -303,6 +307,13 @@ RTC::ReturnCode_t Stabilizer::onInitialize()
           }
           jpe_v.back()->setOptionalWeightVector(optw);
       }
+      for (int j = 0; j < jpe_v.back()->numJoints(); j++ ) {
+          stikp.back().support_pgain = hrp::dvector::Constant(jpe_v.back()->numJoints(),100);
+          stikp.back().support_dgain = hrp::dvector::Constant(jpe_v.back()->numJoints(),100);
+          stikp.back().landing_pgain = hrp::dvector::Constant(jpe_v.back()->numJoints(),100);
+          stikp.back().landing_dgain = hrp::dvector::Constant(jpe_v.back()->numJoints(),100);
+      }
+
       target_ee_p.push_back(hrp::Vector3::Zero());
       target_ee_R.push_back(hrp::Matrix33::Identity());
       act_ee_p.push_back(hrp::Vector3::Zero());
@@ -1875,12 +1886,32 @@ void Stabilizer::startStabilizer(void)
         }
     }
     waitSTTransition();
+    if ( joint_control_mode == OpenHRP::RobotHardwareService::POSITION_TORQUE ) {
+        std::cerr << "[" << m_profile.instance_name << "] " << "Moved to ST command pose and sync to POSITION_TORQUE mode"  << std::endl;
+        m_robotHardwareService0->setServoGainPercentage("all",100);//tmp
+        m_robotHardwareService0->setJointControlMode("all", OpenHRP::RobotHardwareService::POSITION_TORQUE);
+        m_robotHardwareService0->setServoTorqueGainPercentage("all",100);
+        for(size_t i = 0; i < stikp.size(); i++) {
+            STIKParam& ikp = stikp[i];
+            hrp::JointPathExPtr jpe = jpe_v[i];
+            for(size_t j = 0; j < ikp.support_pgain.size(); j++) {
+                m_robotHardwareService0->setServoPGainPercentageWithTime(jpe->joint(j)->name.c_str(),ikp.support_pgain(j),3);
+                m_robotHardwareService0->setServoDGainPercentageWithTime(jpe->joint(j)->name.c_str(),ikp.support_dgain(j),3);
+            }
+        }
+    }
     std::cerr << "[" << m_profile.instance_name << "] " << "Start ST DONE"  << std::endl;
 }
 
 void Stabilizer::stopStabilizer(void)
 {
     waitSTTransition(); // Wait until all transition has finished
+    if ( joint_control_mode == OpenHRP::RobotHardwareService::POSITION_TORQUE ) {
+        m_robotHardwareService0->setServoGainPercentage("all",100);
+        usleep(5*200*dt* 1e6);
+        m_robotHardwareService0->setServoTorqueGainPercentage("all",0);
+        m_robotHardwareService0->setJointControlMode("all", OpenHRP::RobotHardwareService::POSITION);
+    }
     {
         Guard guard(m_mutex);
         if ( (control_mode == MODE_ST || control_mode == MODE_AIR) ) {
@@ -2078,6 +2109,22 @@ void Stabilizer::getParameter(OpenHRP::StabilizerService::stParam& i_stp)
       ilp.manipulability_limit = jpe_v[i]->getManipulabilityLimit();
       ilp.ik_loop_count = stikp[i].ik_loop_count; // size_t -> unsigned short, value may change, but ik_loop_count is small value and value not change
   }
+  i_stp.joint_control_mode = joint_control_mode;
+  i_stp.joint_servo_control_parameters.length(stikp.size());
+  for (size_t i = 0; i < stikp.size(); i++) {
+      OpenHRP::StabilizerService::JointServoControlParameter& jscp = i_stp.joint_servo_control_parameters[i];
+      jscp.support_pgain.length(stikp[i].support_pgain.size());
+      jscp.support_dgain.length(stikp[i].support_dgain.size());
+      jscp.landing_pgain.length(stikp[i].landing_pgain.size());
+      jscp.landing_dgain.length(stikp[i].landing_dgain.size());
+      for (size_t j=0; j < stikp[i].support_pgain.size(); j++) {
+          jscp.support_pgain[j] = stikp[i].support_pgain(j);
+          jscp.support_dgain[j] = stikp[i].support_dgain(j);
+          jscp.landing_pgain[j] = stikp[i].landing_pgain(j);
+          jscp.landing_dgain[j] = stikp[i].landing_dgain(j);
+      }
+  }
+
 };
 
 void Stabilizer::setParameter(const OpenHRP::StabilizerService::stParam& i_stp)
@@ -2380,6 +2427,67 @@ void Stabilizer::setParameter(const OpenHRP::StabilizerService::stParam& i_stp)
       }
       std::cerr << "]" << std::endl;
   }
+  // joint servo control parameters
+  std::cerr << "[" << m_profile.instance_name << "]  joint servo control parameters" << std::endl;
+  if (control_mode == MODE_IDLE) {
+      // !POSITION_TORQUE -> POSITION_TORQUE
+      if( joint_control_mode != OpenHRP::RobotHardwareService::POSITION_TORQUE && i_stp.joint_control_mode == OpenHRP::RobotHardwareService::POSITION_TORQUE ){
+          for(size_t i = 0; i < stikp.size(); i++) {
+              STIKParam& ikp = stikp[i];
+              ikp.eefm_pos_damping_gain *= 1000;
+              ikp.eefm_rot_damping_gain *= 1000;
+          }
+          eefm_swing_pos_damping_gain *= 1000;
+          eefm_swing_rot_damping_gain *= 1000;
+      }
+      // POSITION_TORQUE -> !POSITION_TORQUE
+      if( joint_control_mode == OpenHRP::RobotHardwareService::POSITION_TORQUE && i_stp.joint_control_mode != OpenHRP::RobotHardwareService::POSITION_TORQUE ){
+          for(size_t i = 0; i < stikp.size(); i++) {
+              STIKParam& ikp = stikp[i];
+              ikp.eefm_pos_damping_gain /= 1000;
+              ikp.eefm_rot_damping_gain /= 1000;
+          }
+          eefm_swing_pos_damping_gain /= 1000;
+          eefm_swing_rot_damping_gain /= 1000;
+      }
+      joint_control_mode = i_stp.joint_control_mode;
+      std::cerr << "[" << m_profile.instance_name << "]   joint_control_mode changed" << std::endl;
+  } else {
+      std::cerr << "[" << m_profile.instance_name << "]   joint_control_mode cannot be changed during MODE_AIR or MODE_ST." << std::endl;
+  }
+  bool is_joint_servo_control_parameter_valid_length = true;
+  if ( i_stp.joint_servo_control_parameters.length() == stikp.size() ) {
+      for (size_t i = 0; i < stikp.size(); i++) {
+          const OpenHRP::StabilizerService::JointServoControlParameter& jscp = i_stp.joint_servo_control_parameters[i];
+          if ( stikp[i].support_pgain.size() == i_stp.joint_servo_control_parameters[i].support_pgain.length() &&
+               stikp[i].support_dgain.size() == i_stp.joint_servo_control_parameters[i].support_dgain.length() &&
+               stikp[i].landing_pgain.size() == i_stp.joint_servo_control_parameters[i].landing_pgain.length() &&
+               stikp[i].landing_dgain.size() == i_stp.joint_servo_control_parameters[i].landing_dgain.length() ) {
+              for (size_t j = 0; j < stikp[i].support_pgain.size(); j++) {
+                  stikp[i].support_pgain(j) = i_stp.joint_servo_control_parameters[i].support_pgain[j];
+                  stikp[i].support_dgain(j) = i_stp.joint_servo_control_parameters[i].support_dgain[j];
+                  stikp[i].landing_pgain(j) = i_stp.joint_servo_control_parameters[i].landing_pgain[j];
+                  stikp[i].landing_dgain(j) = i_stp.joint_servo_control_parameters[i].landing_dgain[j];
+              }
+          } else is_joint_servo_control_parameter_valid_length = false;
+      }
+  } else {
+      is_joint_servo_control_parameter_valid_length = false;
+  }
+  if ( is_joint_servo_control_parameter_valid_length ) {
+      std::cerr << "[" << m_profile.instance_name << "]   support_pgain = [";
+      for (size_t i = 0; i < stikp.size(); i++) std::cerr << "[" << stikp[i].support_pgain.transpose() << "],";
+      std::cerr << "]" << std::endl;
+      std::cerr << "[" << m_profile.instance_name << "]   support_dgain = [";
+      for (size_t i = 0; i < stikp.size(); i++) std::cerr << "[" << stikp[i].support_dgain.transpose() << "],";
+      std::cerr << "]" << std::endl;
+      std::cerr << "[" << m_profile.instance_name << "]   landing_pgain = [";
+      for (size_t i = 0; i < stikp.size(); i++) std::cerr << "[" << stikp[i].landing_pgain.transpose() << "],";
+      std::cerr << "]" << std::endl;
+      std::cerr << "[" << m_profile.instance_name << "]   landing_dgain = [";
+      for (size_t i = 0; i < stikp.size(); i++) std::cerr << "[" << stikp[i].landing_dgain.transpose() << "],";
+      std::cerr << "]" << std::endl;
+  } else std::cerr << "[" << m_profile.instance_name << "]   servo gain parameters cannot be set because of invalid param." << std::endl;
 }
 
 std::string Stabilizer::getStabilizerAlgorithmString (OpenHRP::StabilizerService::STAlgorithm _st_algorithm)
