@@ -410,6 +410,7 @@ class HrpsysConfigurator(object):
             if self.octd:
                 connectPorts(self.abc.port("contactStates"), self.octd.port("contactStates"))
             connectPorts(self.st.port("tau"), self.rh.port("tauRef"))
+            connectPorts(self.st.port("RobotHardwareService"), self.rh.port("RobotHardwareService"))
 
         # ref force moment connection
         for sen in self.getForceSensorNames():
