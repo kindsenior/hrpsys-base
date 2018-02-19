@@ -130,7 +130,8 @@ class Stabilizer
   void waitSTTransition();
   // funcitons for calc final torque output
   void calcContactMatrix (hrp::dmatrix& tm, const std::vector<hrp::Vector3>& contact_p);
-  void calcTorque ();
+  void calcExternalForce (const hrp::Vector3& cog, const hrp::Vector3& zmp, const hrp::Matrix33& rot);
+  void calcTorque (const hrp::Matrix33& rot);
   void fixLegToCoords (const std::string& leg, const rats::coordinates& coords);
   void getFootmidCoords (rats::coordinates& ret);
   double calcDampingControl (const double tau_d, const double tau, const double prev_d,
