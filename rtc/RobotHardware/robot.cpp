@@ -64,8 +64,10 @@ bool robot::init()
     for (unsigned int i=0; i<numJoints(); i++){
         pgain[i] = default_pgain[i];
         dgain[i] = default_dgain[i];
-        tqpgain[i] = default_tqpgain[i];
-        tqdgain[i] = default_tqdgain[i];
+        // tqpgain[i] = default_tqpgain[i];
+        // tqdgain[i] = default_tqdgain[i];
+        tqpgain[i] = 0.0;
+        tqdgain[i] = 0.0;
     }
 
     m_servoErrorLimit.resize(numJoints());
