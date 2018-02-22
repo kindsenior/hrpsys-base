@@ -461,6 +461,8 @@ RTC::ReturnCode_t Stabilizer::onInitialize()
   transition_joint_q.resize(m_robot->numJoints());
   qorg.resize(m_robot->numJoints());
   qrefv.resize(m_robot->numJoints());
+  prev_qv.resize(m_robot->numJoints());
+  prev_dqv.resize(m_robot->numJoints());
   transition_count = 0;
   loop = 0;
   m_is_falling_counter = 0;
@@ -2934,13 +2936,27 @@ void Stabilizer::calcContactMatrix (hrp::dmatrix& tm, const std::vector<hrp::Vec
 
 void Stabilizer::calcTorque (const hrp::Matrix33& rot)
 {
-  m_robot->calcForwardKinematics();
+  for (size_t i = 0; i < m_robot->numJoints(); ++i) {
+      m_robot->joint(i)->dq = (qorg[i] - prev_qv[i])/dt;// use qorg
+      m_robot->joint(i)->ddq = (m_robot->joint(i)->dq - prev_dqv[i])/dt;
+  }
+  m_robot->rootLink()->v = (current_root_p - prev_root_p)/dt;
+  Eigen::AngleAxis<double> dR_aa = Eigen::AngleAxis<double>(prev_root_R.transpose()*current_root_R);
+  m_robot->rootLink()->w = std::fabs(dR_aa.angle()) < 1e-6 ? hrp::Vector3::Zero() : (hrp::Vector3) (prev_root_R*((dR_aa.angle()/dt)*dR_aa.axis()));
+  m_robot->rootLink()->dv = hrp::Vector3(0,0,eefm_gravitational_acceleration) + (m_robot->rootLink()->v - prev_root_v)/dt;
+  m_robot->rootLink()->dw = (m_robot->rootLink()->w - prev_root_w)/dt;
+
+  m_robot->rootLink()->vo = m_robot->rootLink()->v - m_robot->rootLink()->w.cross(m_robot->rootLink()->p);
+  m_robot->rootLink()->dvo = m_robot->rootLink()->dv - m_robot->rootLink()->dw.cross(m_robot->rootLink()->p) - m_robot->rootLink()->w.cross(m_robot->rootLink()->v);
+  m_robot->calcForwardKinematics(true,true);
+
+  // m_robot->calcForwardKinematics();
   // buffers for the unit vector method
-  hrp::Vector3 root_w_x_v;
-  hrp::Vector3 g(0, 0, 9.80665);
-  root_w_x_v = m_robot->rootLink()->w.cross(m_robot->rootLink()->vo + m_robot->rootLink()->w.cross(m_robot->rootLink()->p));
-  m_robot->rootLink()->dvo = g - root_w_x_v;   // dv = g, dw = 0
-  m_robot->rootLink()->dw.setZero();
+  // hrp::Vector3 root_w_x_v;
+  // hrp::Vector3 g(0, 0, 9.80665);
+  // root_w_x_v = m_robot->rootLink()->w.cross(m_robot->rootLink()->vo + m_robot->rootLink()->w.cross(m_robot->rootLink()->p));
+  // m_robot->rootLink()->dvo = g - root_w_x_v;   // dv = g, dw = 0
+  // m_robot->rootLink()->dw.setZero();
 
   hrp::Vector3 root_f;
   hrp::Vector3 root_t;
@@ -3023,6 +3039,16 @@ void Stabilizer::calcTorque (const hrp::Matrix33& rot)
   //   }
   //   std::cerr << ")" << std::endl;
   // }
+
+  for (size_t i = 0; i < m_robot->numJoints(); ++i) {
+      m_robot->joint(i)->u *= transition_smooth_gain;
+      prev_qv[i] = qorg[i];
+      prev_dqv[i] = m_robot->joint(i)->dq;
+  }
+  prev_root_p = current_root_p;
+  prev_root_R = current_root_R;
+  prev_root_v = m_robot->rootLink()->v;
+  prev_root_w = m_robot->rootLink()->w;
 };
 
 extern "C"
