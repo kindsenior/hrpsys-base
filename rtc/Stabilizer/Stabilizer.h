@@ -297,6 +297,9 @@ class Stabilizer
   coil::Mutex m_mutex;
   unsigned int m_debugLevel;
   hrp::dvector transition_joint_q, qorg, qrefv;
+  hrp::dvector prev_qv, prev_dqv;
+  hrp::Vector3 prev_root_p, prev_root_v, prev_root_w;
+  hrp::Matrix33 prev_root_R;
   std::vector<STIKParam> stikp;
   std::map<std::string, size_t> contact_states_index_map;
   std::vector<bool> ref_contact_states, prev_ref_contact_states, act_contact_states, prev_act_contact_states, is_ik_enable, is_feedback_control_enable, is_zmp_calc_enable;
