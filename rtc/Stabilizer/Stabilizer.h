@@ -288,6 +288,7 @@ class Stabilizer
     cphase contact_phase;
     double phase_time;
     hrp::dvector support_pgain,support_dgain,landing_pgain,landing_dgain;
+    std::deque<hrp::Vector3> landing_delay_force_deque, landing_delay_moment_deque;
   };
   enum cmode {MODE_IDLE, MODE_AIR, MODE_ST, MODE_SYNC_TO_IDLE, MODE_SYNC_TO_AIR} control_mode;
   // members

@@ -968,6 +968,39 @@ void Stabilizer::getActualParameters ()
           tmp_total_fz += tmp_ref_force.back()(2);
       }
 
+      // ref force/moment landing delay deque
+      tmp_total_fz = 0;
+      for (size_t i = 0; i < stikp.size(); i++) {
+          STIKParam& ikp = stikp[i];
+          if (!is_feedback_control_enable[i]) continue;
+          size_t idx = contact_states_index_map[ikp.ee_name];
+          if (ikp.contact_phase == LANDING_PHASE) {// LANDING PHASE <-> (act_contact_states=false)
+              if (ref_contact_states[i]) {
+                  ikp.landing_delay_force_deque.push_back(tmp_ref_force[idx]);
+                  ikp.landing_delay_moment_deque.push_back(tmp_ref_moment[idx]);
+                  tmp_ref_force[idx] = hrp::Vector3::Zero();
+                  tmp_ref_moment[idx] = hrp::Vector3::Zero();
+              }
+          } else if (ikp.contact_phase == SUPPORT_PHASE) {// SUPPORT PHASE
+              if (ikp.landing_delay_force_deque.size() > 0) {// landing delay
+                  if (ikp.phase_time < landing2support_transition_time) {
+                      double delay_transition_gain = ikp.phase_time / landing2support_transition_time;// delay gain -> original gain = 0->1
+                      ikp.landing_delay_force_deque.push_back(tmp_ref_force[idx]);
+                      ikp.landing_delay_moment_deque.push_back(tmp_ref_moment[idx]);
+                      tmp_ref_force[idx]  = (1-delay_transition_gain)*ikp.landing_delay_force_deque.front()  + delay_transition_gain*tmp_ref_force[idx];
+                      tmp_ref_moment[idx] = (1-delay_transition_gain)*ikp.landing_delay_moment_deque.front() + delay_transition_gain*tmp_ref_moment[idx];
+                      ikp.landing_delay_force_deque.pop_front();
+                      ikp.landing_delay_moment_deque.pop_front();
+                  } else {
+                      std::cerr << "[" << m_profile.instance_name << "] landing_delay_force/moment_deque of " << ikp.ee_name << " (" << ikp.landing_delay_force_deque.size() << ")" << " cleared" << std::endl;
+                      ikp.landing_delay_force_deque.clear();
+                      ikp.landing_delay_moment_deque.clear();
+                  }
+              }
+          }
+          tmp_total_fz += tmp_ref_force[idx](2);
+      }
+
       // All state variables are foot_origin coords relative
       if (DEBUGP) {
           std::cerr << "[" << m_profile.instance_name << "] ee values" << std::endl;
