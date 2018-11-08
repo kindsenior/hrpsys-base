@@ -401,7 +401,7 @@ public:
     {
         calcAlphaVectorFromCOPDistanceCommon(alpha_vector, cop_pos, ee_name, new_refzmp);
         calcAlphaVectorFromCOPDistanceCommon(fz_alpha_vector, cop_pos, ee_name, ref_zmp);
-        for (size_t i = 0; i < ee_name.size(); i++) {
+        for (size_t i = 0; i < ee_name.size(); i++) {// blend=1->ref(act) blend=0->new_ref
             fz_alpha_vector[i] = wrench_alpha_blending * fz_alpha_vector[i] + (1-wrench_alpha_blending) * alpha_vector[i];
         }
     };
@@ -641,8 +641,10 @@ public:
         }
 
         // QP
-        double norm_weight = 1e-7;
-        double cop_weight = 1e-3;
+        // double norm_weight = 1e-7;
+        double norm_weight = 1e-6;// large->small force : use moment
+        // double cop_weight = 1e-3;
+        double cop_weight = 1e-9;// small->large cop diff : use mometn
         double ref_force_weight = 0;// 1e-3;
         hrp::dvector total_fm(3);
         total_fm(0) = total_fz;
@@ -730,6 +732,7 @@ public:
             //std::cerr << "[" << print_str << "]   alpha = " << alpha << ", fz_alpha = " << fz_alpha << std::endl;
             // std::cerr << "[" << print_str << "]   "
             //           << "total_tau    = " << hrp::Vector3(tau_0).format(Eigen::IOFormat(Eigen::StreamPrecision, 0, ", ", ", ", "", "", "[", "]")) << "[Nm]" << std::endl;
+            std::cerr << "[" << print_str << "] norm_weight " << norm_weight << "  cop_weight " << cop_weight << std::endl;
             for (size_t i = 0; i < ee_num; i++) {
                 std::cerr << "[" << print_str << "]   "
                           << "ref_force  [" << ee_name[i] << "] " << hrp::Vector3(ref_foot_force[i]).format(Eigen::IOFormat(Eigen::StreamPrecision, 0, ", ", ", ", "", "", "[", "]")) << "[N]" << std::endl;

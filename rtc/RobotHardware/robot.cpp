@@ -134,7 +134,10 @@ bool robot::loadGain()
     strm.close();
     // Print loaded gain
     std::cerr << "[RobotHardware] loadGain" << std::endl;
-    for (unsigned int i=0; i<numJoints(); i++) {                                                                                                                                               std::cerr << "[RobotHardware]   " << joint(i)->name << ", pgain = " << default_pgain[i] << ", dgain = " << default_dgain[i] << std::endl;
+    for (unsigned int i=0; i<numJoints(); i++) {
+        // std::cerr << "[RobotHardware]   " << joint(i)->name << ", pgain = " << default_pgain[i] << ", dgain = " << default_dgain[i] << std::endl;
+        std::cerr << "[RobotHardware]   " << joint(i)->name << ", pgain = " << default_pgain[i] << ", dgain = " << default_dgain[i];
+        std::cerr << ", tqpgain = "<< default_tqpgain[i] << ", tqdgain = " << default_tqdgain[i] << std::endl;
     }
     return true;
 }

@@ -1006,7 +1006,8 @@ void Stabilizer::getActualParameters ()
                                              new_refzmp, hrp::Vector3(foot_origin_rot * ref_zmp + foot_origin_pos),
                                              tmp_total_fz, dt,
                                              DEBUGP, std::string(m_profile.instance_name),
-                                             (st_algorithm == OpenHRP::StabilizerService::EEFMQPCOP));
+                                             (st_algorithm == OpenHRP::StabilizerService::EEFMQP));
+                                             // (st_algorithm == OpenHRP::StabilizerService::EEFMQPCOP));
         } else if (st_algorithm == OpenHRP::StabilizerService::EEFMQPCOP) {
           szd->distributeZMPToForceMomentsPseudoInverse(tmp_ref_force, tmp_ref_moment,
                                                         ee_pos, cop_pos, ee_rot, ee_name, limb_gains, tmp_toeheel_ratio,
@@ -1345,7 +1346,8 @@ bool Stabilizer::calcZMP(hrp::Vector3& ret_zmp, const double zmp_z)
     m_COPInfo.data[i*3] = tmpcopmx;
     m_COPInfo.data[i*3+1] = tmpcopmy;
     m_COPInfo.data[i*3+2] = tmpcopfz;
-    prev_act_force_z[i] = 0.85 * prev_act_force_z[i] + 0.15 * nf(2); // filter, cut off 5[Hz]
+    // prev_act_force_z[i] = 0.85 * prev_act_force_z[i] + 0.15 * nf(2); // filter, cut off 5[Hz]
+    prev_act_force_z[i] = nf(2); // no filter
     tmpfz2 += prev_act_force_z[i];
   }
   if (tmpfz2 < contact_decision_threshold) {
