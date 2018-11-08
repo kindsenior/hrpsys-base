@@ -1835,6 +1835,12 @@ dr=0, dp=0, dw=0, tm=10, wait=True):
         except:
             print(self.configurator_name + 'exception occured')
 
+        pgain=5
+        dgain=30
+        self.rh_svc.setServoPGainPercentage("LLEG_JOINT0",pgain)
+        self.rh_svc.setServoPGainPercentage("RLEG_JOINT0",pgain)
+        self.rh_svc.setServoDGainPercentage("LLEG_JOINT0",dgain)
+        self.rh_svc.setServoDGainPercentage("RLEG_JOINT0",dgain)
         return 1
 
     def servoOff(self, jname='all', wait=True):
@@ -2061,6 +2067,12 @@ dr=0, dp=0, dw=0, tm=10, wait=True):
         Stop Stabilzier mode
         '''
         self.st_svc.stopStabilizer()
+        pgain=5
+        dgain=30
+        self.rh_svc.setServoPGainPercentage("LLEG_JOINT0",pgain)
+        self.rh_svc.setServoPGainPercentage("RLEG_JOINT0",pgain)
+        self.rh_svc.setServoDGainPercentage("LLEG_JOINT0",dgain)
+        self.rh_svc.setServoDGainPercentage("RLEG_JOINT0",dgain)
 
     def startPositionTorqueMode(self, pdgain_percentage_dict=None):
         '''!@brief
