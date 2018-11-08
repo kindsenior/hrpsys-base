@@ -1279,6 +1279,16 @@ void Stabilizer::getTargetParameters ()
       std::cerr << "[" << m_profile.instance_name << "]   Reset prev_ref_cog for transition (MODE_IDLE=>MODE_ST)." << std::endl;
   }
 
+  ref_cogvel = (ref_cog - prev_ref_cog)/dt;
+
+  // inverse system
+  hrp::Vector3 tmp_ref_cog = ref_cog + transition_smooth_gain * eefm_zmp_delay_time_const[1] * (ref_cog - prev_ref_cog) / dt;
+  prev_ref_cog = ref_cog;
+  ref_cog = tmp_ref_cog;
+  hrp::Vector3 tmp_ref_cogvel = ref_cogvel + transition_smooth_gain * eefm_zmp_delay_time_const[1] * (ref_cogvel - prev_ref_cogvel) / dt;
+  prev_ref_cogvel = ref_cogvel;
+  ref_cogvel = tmp_ref_cogvel;
+
   if (st_algorithm != OpenHRP::StabilizerService::TPCC) {
     // Reference foot_origin frame =>
     // initialize for new_refzmp
@@ -1289,11 +1299,7 @@ void Stabilizer::getTargetParameters ()
     ref_zmp = foot_origin_rot.transpose() * (ref_zmp - foot_origin_pos);
     ref_cog = foot_origin_rot.transpose() * (ref_cog - foot_origin_pos);
     new_refzmp = foot_origin_rot.transpose() * (new_refzmp - foot_origin_pos);
-    if (ref_contact_states != prev_ref_contact_states) {
-      ref_cogvel = (foot_origin_rot.transpose() * prev_ref_foot_origin_rot) * ref_cogvel;
-    } else {
-      ref_cogvel = (ref_cog - prev_ref_cog)/dt;
-    }
+    ref_cogvel = foot_origin_rot.transpose() * ref_cogvel;
     prev_ref_foot_origin_rot = ref_foot_origin_rot = foot_origin_rot;
     for (size_t i = 0; i < stikp.size(); i++) {
       stikp[i].target_ee_diff_p = foot_origin_rot.transpose() * (target_ee_p[i] - foot_origin_pos);
@@ -1314,7 +1320,6 @@ void Stabilizer::getTargetParameters ()
   } else {
     ref_cogvel = (ref_cog - prev_ref_cog)/dt;
   } // st_algorithm == OpenHRP::StabilizerService::EEFM
-  prev_ref_cog = ref_cog;
   // Calc swing support limb gain param
   calcSwingSupportLimbGain();
 }
