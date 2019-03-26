@@ -900,6 +900,25 @@ void Stabilizer::getActualParameters ()
     act_cp = act_cog + act_cogvel / std::sqrt(eefm_gravitational_acceleration / (act_cog - act_zmp)(2));
     rel_act_cp = hrp::Vector3(act_cp(0), act_cp(1), act_zmp(2));
     rel_act_cp = m_robot->rootLink()->R.transpose() * ((foot_origin_pos + foot_origin_rot * rel_act_cp) - m_robot->rootLink()->p);
+
+    // truncate ZMP
+    if (control_mode == MODE_ST) {
+      std::vector<hrp::Vector3> ee_pos;
+      std::vector<hrp::Matrix33> ee_rot;
+      for (size_t i = 0; i < stikp.size(); i++) {
+          STIKParam& ikp = stikp[i];
+          if (!is_feedback_control_enable[i]) continue;
+          hrp::Link* target = m_robot->link(ikp.target_name);
+          ee_pos.push_back(foot_origin_rot.transpose() * (target->p + target->R * ikp.localp - foot_origin_pos));
+          ee_rot.push_back(foot_origin_rot.transpose() * target->R * ikp.localR);
+      }
+      if (use_zmp_truncation && (act_contact_states[0] || act_contact_states[1])) {
+          Eigen::Vector2d tmp_act_zmp(act_zmp.head(2));
+          szd->get_vertices(support_polygon_vetices);
+          szd->calc_convex_hull(support_polygon_vetices, act_contact_states, ee_pos, ee_rot);
+          if (!szd->is_inside_support_polygon(tmp_act_zmp, hrp::Vector3::Zero(), true, std::string(m_profile.instance_name))) act_zmp.head(2) = tmp_act_zmp;
+      }
+    }
     // <= Actual foot_origin frame
 
     // Actual world frame =>
@@ -982,7 +1001,7 @@ void Stabilizer::getActualParameters ()
       }
 
       // truncate ZMP
-      if (use_zmp_truncation) {
+      if (use_zmp_truncation && (ref_contact_states[0] || ref_contact_states[1])) {
         Eigen::Vector2d tmp_new_refzmp(new_refzmp.head(2));
         szd->get_vertices(support_polygon_vetices);
         szd->calc_convex_hull(support_polygon_vetices, ref_contact_states, ee_pos, ee_rot);
