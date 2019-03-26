@@ -2905,7 +2905,8 @@ void Stabilizer::setSwingSupportJointServoGains(){
         }
         // if (ikp.contact_phase == SUPPORT_PHASE && !act_contact_states[i] && ikp.phase_time > tmp_landing2support_transition_time) { // SUPPORT -> SWING
         if (ikp.contact_phase == SUPPORT_PHASE && !act_contact_states[i] && ikp.phase_time > tmp_landing2support_transition_time
-            && ( (ref_contact_states[i] && m_controlSwingSupportTime.data[i] < 0.2) || !ref_contact_states[i] )) { // SUPPORT -> SWING
+            // && ( (ref_contact_states[i] && m_controlSwingSupportTime.data[i] < 0.2) || !ref_contact_states[i] )) { // SUPPORT -> SWING
+            && !ref_contact_states[i] ) { // SUPPORT -> SWING
             ikp.contact_phase = SWING_PHASE;
             ikp.phase_time = 0;
         }
