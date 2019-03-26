@@ -1260,15 +1260,9 @@ void Stabilizer::getTargetParameters ()
   hrp::Vector3 foot_origin_pos;
   hrp::Matrix33 foot_origin_rot;
   calcFootOriginCoords (foot_origin_pos, foot_origin_rot);
-  if (st_algorithm != OpenHRP::StabilizerService::TPCC) {
-    // apply inverse system
-    hrp::Vector3 tmp_ref_zmp = ref_zmp + eefm_zmp_delay_time_const[0] * (ref_zmp - prev_ref_zmp) / dt;
-    prev_ref_zmp = ref_zmp;
-    ref_zmp = tmp_ref_zmp;
-  }
   ref_cog = m_robot->calcCM();
   ref_total_force = hrp::Vector3::Zero();
-  ref_total_moment = hrp::Vector3::Zero(); // Total moment around reference ZMP tmp
+  ref_total_moment = hrp::Vector3::Zero(); // Total moment around reference ZMP
   ref_total_foot_origin_moment = hrp::Vector3::Zero();
   for (size_t i = 0; i < stikp.size(); i++) {
     hrp::Link* target = m_robot->link(stikp[i].target_name);
@@ -1289,6 +1283,12 @@ void Stabilizer::getTargetParameters ()
     if (is_feedback_control_enable[i]) {
         ref_total_foot_origin_moment += (target_ee_p[i]-foot_origin_pos).cross(ref_force[i]) + ref_moment[i];
     }
+  }
+  if (st_algorithm != OpenHRP::StabilizerService::TPCC) {
+    // apply inverse system
+    hrp::Vector3 tmp_ref_zmp = ref_zmp + eefm_zmp_delay_time_const[0] * (ref_zmp - prev_ref_zmp) / dt;
+    prev_ref_zmp = ref_zmp;
+    ref_zmp = tmp_ref_zmp;
   }
   // <= Reference world frame
 
