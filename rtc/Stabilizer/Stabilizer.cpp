@@ -2914,6 +2914,8 @@ void Stabilizer::setSwingSupportJointServoGains(){
 }
 
 void Stabilizer::calcExternalForce(const hrp::Vector3& cog, const hrp::Vector3& zmp, const hrp::Matrix33& rot){
+    const double rate_during_landing = 0.1;
+    const double wrench_transition_time = 0.15;
     // cog, zmp must be in the same coords with stikp.ref_forece
     hrp::Vector3 total_force = hrp::Vector3::Zero();
     for (size_t j = 0; j < stikp.size(); j++) {
@@ -2922,7 +2924,13 @@ void Stabilizer::calcExternalForce(const hrp::Vector3& cog, const hrp::Vector3& 
     total_force.segment(0,2) = (cog.segment(0,2) - zmp.segment(0,2))*total_force(2)/(cog(2) - zmp(2));// overwrite fxy
     for (size_t j = 0; j < stikp.size(); j++) {
         STIKParam& ikp = stikp[j];
-        if (total_force(2) > 1e-6) ikp.ref_force.segment(0,2) += rot.transpose() * total_force.segment(0,2) * ikp.ref_force(2)/total_force(2);
+        if (on_ground && total_force(2) > 1e-6) ikp.ref_force.segment(0,2) += rot.transpose() * total_force.segment(0,2) * ikp.ref_force(2)/total_force(2);// set fx,fy
+
+        if (ikp.contact_phase == LANDING_PHASE)
+            // ikp.ref_moment = hrp::Vector3::Zero();// set moment to zero during landing phase
+            ikp.ref_moment *= rate_during_landing;
+        else if(ikp.contact_phase == SUPPORT_PHASE)
+            ikp.ref_moment *= rate_during_landing + (1-rate_during_landing)*std::min(1.0, ikp.phase_time/wrench_transition_time);
     }
 }
 
