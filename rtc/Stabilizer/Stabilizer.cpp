@@ -675,6 +675,8 @@ RTC::ReturnCode_t Stabilizer::onExecute(RTC::UniqueId ec_id)
       for ( int i = 0; i < m_robot->numJoints(); i++ ){
         m_qRef.data[i] = m_robot->joint(i)->q;
         m_tau.data[i] = m_robot->joint(i)->u;
+        if (control_mode == MODE_AIR || control_mode == MODE_ST) m_tau.data[i] = m_ref_wrenches[0].data[0];
+        else m_tau.data[i] = m_ref_wrenches[0].data[1];
       }
       m_zmp.data.x = rel_act_zmp(0);
       m_zmp.data.y = rel_act_zmp(1);
@@ -1932,30 +1934,32 @@ void Stabilizer::startStabilizer(void)
         }
     }
     waitSTTransition();
-    if ( joint_control_mode == OpenHRP::RobotHardwareService::TORQUE ) {
-        std::cerr << "[" << m_profile.instance_name << "] " << "Moved to ST command pose and sync to TORQUE mode"  << std::endl;
-        m_robotHardwareService0->setServoGainPercentage("all",100);//tmp
-        m_robotHardwareService0->setServoTorqueGainPercentage("all",100);
-        for(size_t i = 0; i < stikp.size(); i++) {
-            STIKParam& ikp = stikp[i];
-            hrp::JointPathExPtr jpe = jpe_v[i];
-            for(size_t j = 0; j < ikp.support_pgain.size(); j++) {
-                m_robotHardwareService0->setServoPGainPercentageWithTime(jpe->joint(j)->name.c_str(),ikp.support_pgain(j),3);
-                m_robotHardwareService0->setServoDGainPercentageWithTime(jpe->joint(j)->name.c_str(),ikp.support_dgain(j),3);
-            }
-        }
-    }
+    m_robotHardwareService0->setServoGainPercentage("all",0);
+    m_robotHardwareService0->setServoTorqueGainPercentage("all",100);
+    // if ( joint_control_mode == OpenHRP::RobotHardwareService::TORQUE ) {
+    //     std::cerr << "[" << m_profile.instance_name << "] " << "Moved to ST command pose and sync to TORQUE mode"  << std::endl;
+    //     m_robotHardwareService0->setServoGainPercentage("all",100);//tmp
+    //     m_robotHardwareService0->setServoTorqueGainPercentage("all",100);
+    //     for(size_t i = 0; i < stikp.size(); i++) {
+    //         STIKParam& ikp = stikp[i];
+    //         hrp::JointPathExPtr jpe = jpe_v[i];
+    //         for(size_t j = 0; j < ikp.support_pgain.size(); j++) {
+    //             m_robotHardwareService0->setServoPGainPercentageWithTime(jpe->joint(j)->name.c_str(),ikp.support_pgain(j),3);
+    //             m_robotHardwareService0->setServoDGainPercentageWithTime(jpe->joint(j)->name.c_str(),ikp.support_dgain(j),3);
+    //         }
+    //     }
+    // }
     std::cerr << "[" << m_profile.instance_name << "] " << "Start ST DONE"  << std::endl;
 }
 
 void Stabilizer::stopStabilizer(void)
 {
     waitSTTransition(); // Wait until all transition has finished
-    if ( joint_control_mode == OpenHRP::RobotHardwareService::TORQUE ) {
-        m_robotHardwareService0->setServoGainPercentage("all",100);
-        usleep(5*200*dt* 1e6);
-        m_robotHardwareService0->setServoTorqueGainPercentage("all",0);
-    }
+    // if ( joint_control_mode == OpenHRP::RobotHardwareService::TORQUE ) {
+    //     m_robotHardwareService0->setServoGainPercentage("all",100);
+    //     usleep(5*200*dt* 1e6);
+    //     m_robotHardwareService0->setServoTorqueGainPercentage("all",0);
+    // }
     {
         Guard guard(m_mutex);
         if ( (control_mode == MODE_ST || control_mode == MODE_AIR) ) {
