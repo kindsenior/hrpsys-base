@@ -81,6 +81,11 @@ CORBA::Boolean AutoBalanceStabilizerService_impl::goPos( CORBA::Double x,  CORBA
     return m_autobalancestabilizer->goPos(x, y, th);
 };
 
+CORBA::Boolean AutoBalanceStabilizerService_impl::goPos2( CORBA::Double x,  CORBA::Double y,  CORBA::Double th)
+{
+    return m_autobalancestabilizer->goPos(x, y, th);
+};
+
 // CORBA::Boolean AutoBalanceStabilizerService_impl::goVelocity( CORBA::Double vx,  CORBA::Double vy,  CORBA::Double vth)
 // {
 //   return m_autobalancestabilizer->goVelocity(vx, vy, vth);

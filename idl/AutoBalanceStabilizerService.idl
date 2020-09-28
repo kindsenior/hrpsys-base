@@ -598,6 +598,7 @@ module OpenHRP
      * @return true if set successfully, false otherwise
      */
     boolean goPos(in double x, in double y, in double th);
+    boolean goPos2(in double x, in double y, in double th);      
 
     /**
      * @brief Walk at the desired velocity. If the robot is stopping, the robot starts stepping. Returns without waiting for whole steps to be executed.
