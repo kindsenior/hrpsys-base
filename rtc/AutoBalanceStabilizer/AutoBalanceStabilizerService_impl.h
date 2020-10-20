@@ -36,11 +36,12 @@ class AutoBalanceStabilizerService_impl
     CORBA::Boolean setHeelContactPoints(const CORBA::Long link_id, const OpenHRP::AutoBalanceStabilizerService::DblSeq3Seq& contact_points);
 
     CORBA::Boolean goPos( CORBA::Double x,  CORBA::Double y,  CORBA::Double th);
-    CORBA::Boolean goPos2( CORBA::Double x,  CORBA::Double y,  CORBA::Double th);
+    CORBA::Boolean setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss);
     // CORBA::Boolean goVelocity( CORBA::Double vx,  CORBA::Double vy,  CORBA::Double vth);
     CORBA::Boolean goStop();
     // CORBA::Boolean emergencyStop();
     // CORBA::Boolean setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss, CORBA::Long overwrite_fs_idx);
+    // CORBA::Boolean setFootSteps(); // TODO 引数
     // CORBA::Boolean setFootStepsWithParam(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss, const OpenHRP::AutoBalanceStabilizerService::StepParamsSequence& spss, CORBA::Long overwrite_fs_idx);
     void waitFootSteps();
     // void waitFootStepsEarly(CORBA::Double tm);

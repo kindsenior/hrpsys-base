@@ -81,15 +81,10 @@ CORBA::Boolean AutoBalanceStabilizerService_impl::goPos( CORBA::Double x,  CORBA
     return m_autobalancestabilizer->goPos(x, y, th);
 };
 
-CORBA::Boolean AutoBalanceStabilizerService_impl::goPos2( CORBA::Double x,  CORBA::Double y,  CORBA::Double th)
+CORBA::Boolean AutoBalanceStabilizerService_impl::setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss)
 {
-    return m_autobalancestabilizer->goPos(x, y, th);
+    return m_autobalancestabilizer->setFootSteps(fss);
 };
-
-// CORBA::Boolean AutoBalanceStabilizerService_impl::goVelocity( CORBA::Double vx,  CORBA::Double vy,  CORBA::Double vth)
-// {
-//   return m_autobalancestabilizer->goVelocity(vx, vy, vth);
-// };
 
 CORBA::Boolean AutoBalanceStabilizerService_impl::goStop()
 {
@@ -104,6 +99,11 @@ CORBA::Boolean AutoBalanceStabilizerService_impl::goStop()
 // CORBA::Boolean AutoBalanceStabilizerService_impl::setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss, CORBA::Long overwrite_fs_idx)
 // {
 //   return m_autobalancestabilizer->setFootSteps(fss, overwrite_fs_idx);
+// }
+
+// CORBA::Boolean AutoBalanceStabilizerService_impl::setFootSteps() // TODO 引数
+// {
+//   return m_autobalancestabilizer->setFootSteps();
 // }
 
 // CORBA::Boolean AutoBalanceStabilizerService_impl::setFootStepsWithParam(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss, const OpenHRP::AutoBalanceStabilizerService::StepParamsSequence& spss, CORBA::Long overwrite_fs_idx)

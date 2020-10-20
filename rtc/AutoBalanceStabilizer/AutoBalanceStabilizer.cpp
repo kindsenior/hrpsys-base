@@ -1380,6 +1380,64 @@ bool AutoBalanceStabilizer::goPos(const double x, const double y, const double t
     return true;
 }
 
+
+bool AutoBalanceStabilizer::setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss)
+{
+    if (is_stop_mode) {
+        std::cerr << "[" << m_profile.instance_name << "] Cannot goPos while stopping mode." << std::endl;
+        return false;
+    }
+
+    if (control_mode != MODE_ABC) {
+        std::cerr << "[" << m_profile.instance_name << "] Cannot goPos if not MODE_ABC." << std::endl;
+        return false;
+    }
+
+    // TODO: confファイルからcycleをよむ
+    // CHIDORI
+    // std::vector<int> support_link_cycle{13, 7};
+    // std::vector<int> swing_link_cycle{7, 13};
+
+    // Blue
+    std::vector<int> support_link_cycle{25, 31};
+    std::vector<int> swing_link_cycle{31, 25};
+    int length=fss.length();
+    int fs_side[length];        // 0->右 1->左
+    hrp::Vector3 footsteps_pos[length];
+    Eigen::Quaterniond footsteps_rot[length];
+    std::vector<std::string> side(length);
+
+    for(int i=0;i<length;i++){  // TODO footstepsに複数footstepが入る場合
+        side[i]=fss[i].fs[0].leg;
+        if(side[i] == "rleg"){
+            fs_side[i]=0;
+        }
+        else if(side[i] == "lleg"){
+            fs_side[i]=1;
+        }
+        else{
+            std::cerr << "[" << m_profile.instance_name << "] footstep leg is not lleg or rleg" << std::endl; // biped only
+            return false;
+        }
+        footsteps_pos[i].x()=fss[i].fs[0].pos[0];
+        footsteps_pos[i].y()=fss[i].fs[0].pos[1];
+        footsteps_pos[i].z()=fss[i].fs[0].pos[2];
+        footsteps_rot[i].w()=fss[i].fs[0].rot[0];
+        footsteps_rot[i].x()=fss[i].fs[0].rot[1];
+        footsteps_rot[i].y()=fss[i].fs[0].rot[2];
+        footsteps_rot[i].z()=fss[i].fs[0].rot[3];
+    }
+    
+
+    if (!gg->setFootSteps(support_link_cycle, swing_link_cycle, footsteps_pos, footsteps_rot, fs_side, length)) return false;
+
+    Guard guard(m_mutex);
+    gg_is_walking = true; // TODO: 自動でgg_is_walkingをfalseにする & constraintsのclear
+
+    return true;
+}
+
+
 bool AutoBalanceStabilizer::goStop ()
 {
     std::cerr << "[" << m_profile.instance_name << "] goStop" << std::endl;

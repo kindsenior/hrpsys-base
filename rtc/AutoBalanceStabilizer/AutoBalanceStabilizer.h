@@ -104,6 +104,7 @@ class AutoBalanceStabilizer : public RTC::DataFlowComponentBase
     }
 
     bool goPos(const double x, const double y, const double th);
+    bool setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss);
     bool goVelocity(const double& vx, const double& vy, const double& vth);
     bool goStop();
     bool emergencyStop ();
@@ -113,8 +114,9 @@ class AutoBalanceStabilizer : public RTC::DataFlowComponentBase
         fik->q_ref_constraint_weight = q_weights;
         return true;
     }
-    bool setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepSequence& fs, CORBA::Long overwrite_fs_idx);
-    bool setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss, CORBA::Long overwrite_fs_idx);
+
+    // bool setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss, CORBA::Long overwrite_fs_idx);
+    // bool setFootSteps();
     bool setFootStepsWithParam(const OpenHRP::AutoBalanceStabilizerService::FootstepSequence& fs, const OpenHRP::AutoBalanceStabilizerService::StepParamSequence& sps, CORBA::Long overwrite_fs_idx);
     bool setFootStepsWithParam(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss, const OpenHRP::AutoBalanceStabilizerService::StepParamsSequence& spss, CORBA::Long overwrite_fs_idx);
     void waitFootSteps();

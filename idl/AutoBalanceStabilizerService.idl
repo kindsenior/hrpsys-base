@@ -598,8 +598,9 @@ module OpenHRP
      * @return true if set successfully, false otherwise
      */
     boolean goPos(in double x, in double y, in double th);
-    boolean goPos2(in double x, in double y, in double th);      
-
+    // boolean goPos2(in double x, in double y, in double th);      
+    boolean setFootSteps(in FootstepsSequence fss);
+      
     /**
      * @brief Walk at the desired velocity. If the robot is stopping, the robot starts stepping. Returns without waiting for whole steps to be executed.
      * @param i_vx[m/s], i_vy[m/s], and i_vth[deg/s] are velocity in the current mid-coords of right foot and left foot.
@@ -628,6 +629,7 @@ module OpenHRP
      * @return true if set successfully, false otherwise
      */
     // boolean setFootSteps(in FootstepsSequence fss, in long overwrite_fs_idx);
+      // boolean setFootSteps();
 
     /**
      * @brief Set footsteps. Returns without waiting for whole steps to be executed.
