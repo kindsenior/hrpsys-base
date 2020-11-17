@@ -37,6 +37,7 @@ class AutoBalanceStabilizerService_impl
 
     CORBA::Boolean goPos( CORBA::Double x,  CORBA::Double y,  CORBA::Double th);
     CORBA::Boolean setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss);
+    CORBA::Boolean setRunningFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss);
     // CORBA::Boolean goVelocity( CORBA::Double vx,  CORBA::Double vy,  CORBA::Double vth);
     CORBA::Boolean goStop();
     // CORBA::Boolean emergencyStop();

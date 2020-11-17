@@ -105,6 +105,7 @@ class AutoBalanceStabilizer : public RTC::DataFlowComponentBase
 
     bool goPos(const double x, const double y, const double th);
     bool setFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss);
+    bool setRunningFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss);    
     bool goVelocity(const double& vx, const double& vy, const double& vth);
     bool goStop();
     bool emergencyStop ();
