@@ -647,6 +647,9 @@ module OpenHRP
      */
     // boolean setFootStepsWithParam(in FootstepsSequence fss, in StepParamsSequence spss, in long overwrite_fs_idx);
 
+    // TODO brief explanations of setRunningFootSteps
+    boolean setRunningFootSteps(in FootstepsSequence fss);
+
     /**
      * @brief Wait for whole footsteps are executed.
      * @param

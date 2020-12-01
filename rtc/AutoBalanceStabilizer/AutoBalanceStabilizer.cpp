@@ -1527,6 +1527,76 @@ bool AutoBalanceStabilizer::setFootSteps(const OpenHRP::AutoBalanceStabilizerSer
     return true;
 }
 
+bool AutoBalanceStabilizer::setRunningFootSteps(const OpenHRP::AutoBalanceStabilizerService::FootstepsSequence& fss)
+{
+    if (is_stop_mode) {
+        std::cerr << "[" << m_profile.instance_name << "] Cannot setRunningFootSteps while stopping mode." << std::endl;
+        return false;
+    }
+
+    if (control_mode != MODE_ABC) {
+        std::cerr << "[" << m_profile.instance_name << "] Cannot setRunningFootSteps if not MODE_ABC." << std::endl;
+        return false;
+    }
+
+    const hrp::ConstraintsWithCount& cur_constraints = gg->getCurrentConstraints(loop);
+    Eigen::Isometry3d start_coord = cur_constraints.calcCOPCoord();
+
+    // TODO: confファイルからcycleをよむ
+    // CHIDORI
+    // std::vector<int> support_link_cycle{13, 7};
+    // std::vector<int> swing_link_cycle{7, 13};
+
+    // Blue
+    std::vector<int> support_link_cycle{25, 31}; // なんで要らなくなった？
+    std::vector<int> swing_link_cycle{31, 25};
+
+    int length=fss.length();
+    int fs_side[length];        // 0->右 1->左
+    Eigen::Isometry3d footstep_coord;
+    hrp::Vector3 footstep_pos;
+    Eigen::Quaterniond footstep_q;
+    hrp::Vector3 footsteps_pos[length];
+    Eigen::Quaterniond footsteps_rot[length];
+    std::vector<std::string> side(length);
+
+    for(int i=0;i<length;i++){  // TODO footstepsに複数footstepが入る場合
+        side[i]=fss[i].fs[0].leg;
+        if(side[i] == "rleg"){
+            fs_side[i]=0;
+        }
+        else if(side[i] == "lleg"){
+            fs_side[i]=1;
+        }
+        else{
+            std::cerr << "[" << m_profile.instance_name << "] footstep leg is not lleg or rleg" << std::endl; // biped only
+            return false;
+        }
+
+        footstep_pos.x() = fss[i].fs[0].pos[0];
+        footstep_pos.y() = fss[i].fs[0].pos[1];
+        footstep_pos.z() = fss[i].fs[0].pos[2];
+        footstep_q.w() = fss[i].fs[0].rot[0];
+        footstep_q.x() = fss[i].fs[0].rot[1];
+        footstep_q.y() = fss[i].fs[0].rot[2];
+        footstep_q.z() = fss[i].fs[0].rot[3];
+
+        footstep_coord.translation() = start_coord.translation() + start_coord.linear() * footstep_pos; // zがあるとき怪しい？start_coordでyaw軸以外の回転があった場合も
+        footstep_coord.linear() = start_coord.linear() * footstep_q.normalized().toRotationMatrix();
+
+        footsteps_pos[i] = footstep_coord.translation();
+        footsteps_rot[i] = footstep_coord.linear();
+    }
+
+    // if (!gg->setRunningFootSteps(support_link_cycle, swing_link_cycle, footsteps_pos, footsteps_rot, fs_side, length, m_dt)) return false;
+    if (!gg->setRunningFootSteps(footsteps_pos, footsteps_rot, fs_side, length, m_dt)) return false;
+
+    Guard guard(m_mutex);
+    gg_is_walking = true; // TODO: 自動でgg_is_walkingをfalseにする & constraintsのclear
+
+    return true;
+}
+
 bool AutoBalanceStabilizer::goStop ()
 {
     std::cerr << "[" << m_profile.instance_name << "] goStop" << std::endl;

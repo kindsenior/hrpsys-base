@@ -290,6 +290,12 @@ class GaitGenerator
                       Eigen::Quaterniond footsteps_rot[],
                       int fs_side[],
                       int length);
+    bool setRunningFootSteps(hrp::Vector3 footsteps_pos[],
+                             Eigen::Quaterniond footsteps_rot[],
+                             int fs_side[],
+                             int length,
+                             const double dt,
+                             const double g_acc = DEFAULT_GRAVITATIONAL_ACCELERATION);
     bool startRunning(const double dt, const double g_acc = DEFAULT_GRAVITATIONAL_ACCELERATION);
     bool startJumping(const double dt, const double g_acc = DEFAULT_GRAVITATIONAL_ACCELERATION);
     bool startRunJumpDemo(const double dt, const double g_acc = DEFAULT_GRAVITATIONAL_ACCELERATION);
