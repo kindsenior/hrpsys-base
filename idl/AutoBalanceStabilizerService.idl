@@ -637,6 +637,7 @@ module OpenHRP
      * @return true if set successfully, false otherwise
      */
     // boolean setFootSteps(in FootstepsSequence fss, in long overwrite_fs_idx);
+    boolean setFootSteps(in FootstepsSequence fss);
 
     /**
      * @brief Set footsteps. Returns without waiting for whole steps to be executed.
