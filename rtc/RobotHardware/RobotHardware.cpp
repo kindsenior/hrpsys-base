@@ -171,8 +171,10 @@ RTC::ReturnCode_t RobotHardware::onInitialize()
   m_tauRef.data.length(num_joints);
   m_pgain.data.length(num_joints);
   m_dgain.data.length(num_joints);
+#if defined(ROBOT_IOB_VERSION) && ROBOT_IOB_VERSION >= 4
   m_tqpgain.data.length(num_joints);
   // m_tqdgain.data.length(num_joints);
+#endif
   m_gainTransitionTime.data.length(num_joints);
 
   int ngyro = m_robot->numSensors(Sensor::RATE_GYRO);
@@ -348,13 +350,17 @@ RTC::ReturnCode_t RobotHardware::onExecute(RTC::UniqueId ec_id)
   for (unsigned int i = 0; i < m_pgain.data.length(); i++) {
       m_robot->readJointServoPgain(i, &m_pgain.data[i]);
       m_robot->readJointServoDgain(i, &m_dgain.data[i]);
+#if defined(ROBOT_IOB_VERSION) && ROBOT_IOB_VERSION >= 4
       m_robot->readJointTorquePgain(i, &m_tqpgain.data[i]);
       // m_robot->readJointTorqueDgain(i, &m_tqdgain.data[i]);
+#endif
   }
   m_pgain.tm = tm;
   m_dgain.tm = tm;
+#if defined(ROBOT_IOB_VERSION) && ROBOT_IOB_VERSION >= 4
   m_tqpgain.tm = tm;
   // m_tqdgain.tm = tm;
+#endif
 
   for (unsigned int i=0; i<m_rate.size(); i++){
       double rate[3];
