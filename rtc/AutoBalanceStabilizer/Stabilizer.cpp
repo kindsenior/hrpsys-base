@@ -1905,6 +1905,24 @@ void Stabilizer::getStabilizerParam(OpenHRP::AutoBalanceStabilizerService::Stabi
         ilp.manipulability_limit = jpe_v[i]->getManipulabilityLimit();
         ilp.ik_loop_count = stikp[i].ik_loop_count; // size_t -> unsigned short, value may change, but ik_loop_count is small value and value not change
     }
+    i_stp.swing2landing_transition_time = swing2landing_transition_time;
+    i_stp.landing_phase_time = landing_phase_time;
+    i_stp.landing2support_transition_time = landing2support_transition_time;
+    i_stp.joint_control_mode = joint_control_mode;
+    i_stp.joint_servo_control_parameters.length(stikp.size());
+    for (size_t i = 0; i < stikp.size(); i++) {
+        OpenHRP::AutoBalanceStabilizerService::JointServoControlParameter& jscp = i_stp.joint_servo_control_parameters[i];
+        jscp.support_pgain.length(stikp[i].support_pgain.size());
+        jscp.support_dgain.length(stikp[i].support_dgain.size());
+        jscp.landing_pgain.length(stikp[i].landing_pgain.size());
+        jscp.landing_dgain.length(stikp[i].landing_dgain.size());
+        for (size_t j=0; j < stikp[i].support_pgain.size(); j++) {
+            jscp.support_pgain[j] = stikp[i].support_pgain(j);
+            jscp.support_dgain[j] = stikp[i].support_dgain(j);
+            jscp.landing_pgain[j] = stikp[i].landing_pgain(j);
+            jscp.landing_dgain[j] = stikp[i].landing_dgain(j);
+        }
+    }
 }
 
 // TODO: move to Service_impl ?
