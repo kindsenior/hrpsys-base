@@ -20,30 +20,9 @@
 #include "hrpsys/idl/AutoBalanceStabilizerService.hh"
 #include "Utility.h"
 #include "ZMPDistributor.h"
+#include "StateEstimator.h"
 
 namespace hrp {
-
-struct paramsFromAutoBalancer
-{
-    hrp::dvector q_ref;
-    hrp::Vector3 zmp_ref;
-    hrp::Vector3 base_pos_ref;
-    hrp::Vector3 base_rpy_ref;
-    bool is_walking;
-    std::vector<bool> ref_contact_states;
-    // std::vector<double> toe_heel_ratio;
-    std::vector<double> control_swing_support_time;
-    std::vector<hrp::dvector6> wrenches_ref;
-    // std::vector<hrp::Vector3> limb_cop_offsets;
-    hrp::Vector3 sbp_cog_offset;
-};
-
-struct paramsFromSensors
-{
-    hrp::dvector q_current;
-    hrp::Vector3 rpy;
-    std::vector<hrp::dvector6> wrenches;
-};
 
 struct stabilizerPortData
 {
@@ -67,12 +46,11 @@ struct stabilizerPortData
 class Stabilizer
 {
   public:
-    Stabilizer(const hrp::BodyPtr& _robot, const std::string& _comp_name, const double _dt, std::mutex& _mutex);
+    Stabilizer(hrp::BodyPtr& _robot, const hrp::BodyPtr& _act_robot, const std::string& _comp_name, const double _dt, std::mutex& _mutex, std::shared_ptr<hrp::StateEstimator>& _act_se, const std::vector<int>& link_indices);
     virtual ~Stabilizer() {};
 
     void initStabilizer(const RTC::Properties& prop, const size_t ee_num);
-    void execStabilizer(const paramsFromAutoBalancer& abc_param,
-                        const paramsFromSensors& sensor_param);
+    void execStabilizer(const stateRefInputData& input_data);
 
     // TODO: tmporarary function: delete this function after merging autobalancestabilizer IK and stabilizer IK
     void addSTIKParam(const std::string& ee_name, const std::string& target_name,
@@ -135,6 +113,7 @@ class Stabilizer
     }
 
     // Setter for AutoBalanceStabilizer
+    void setCurrentLoop(const size_t _loop) { loop = _loop; }
     void setIfChangeServoGains(const bool if_change) { change_servo_gains = if_change; }
 
     // Getter for AutoBalanceStabilizer
@@ -160,8 +139,8 @@ class Stabilizer
     OpenHRP::AutoBalanceStabilizerService::JointControlMode joint_control_mode = OpenHRP::AutoBalanceStabilizerService::JOINT_POSITION;
 
     void storeCurrentStates();
-    void calcTargetParameters(const paramsFromAutoBalancer& abc_param);
-    void calcActualParameters(const paramsFromSensors& sensor_param);
+    void calcTargetParameters(const stateRefInputData& input_data);
+    void calcActualParameters(const stateRefInputData& input_data);
     void calcFootOriginCoords (hrp::Vector3& foot_origin_pos, hrp::Matrix33& foot_origin_rot);
     void syncToSt();
     void syncToIdle();
@@ -169,7 +148,6 @@ class Stabilizer
      * @fn
      * @return being on ground or not
      */
-    bool calcZMP(hrp::Vector3& ret_zmp, const double zmp_z);
     void moveBasePosRotForBodyRPYControl ();
     void calcSwingSupportLimbGain();
     void calcTPCC();
@@ -198,10 +176,6 @@ class Stabilizer
     void calcExternalForce(const hrp::Vector3& cog, const hrp::Vector3& zmp, const hrp::Matrix33& rot);
     void calcTorque(const hrp::Matrix33& rot);
 
-    bool isContact (const size_t idx) // 0 = right, 1 = left
-    {
-        return (prev_act_force_z[idx] > 25.0);
-    }
     int calcMaxTransitionCount ()
     {
         return (transition_time / dt);
@@ -272,13 +246,17 @@ class Stabilizer
         hrp::dvector landing_dgain;
     };
 
-    hrp::BodyPtr m_robot;
+    hrp::BodyPtr& m_robot;
+    const hrp::BodyPtr& m_act_robot; // This is the reference to the mutex of AutoBalanceStabilizer class
     std::mutex& m_mutex; // This is the reference to the mutex of AutoBalanceStabilizer class
+    std::shared_ptr<hrp::StateEstimator>& act_se;
     const std::string comp_name;
     const double dt;
-    unsigned int loop = 0;
+    size_t loop = 0;
     double g_acc = 9.80665; // [m/s^2]
     double total_mass;
+
+    std::shared_ptr<hrp::StateEstimator> ref_se;
 
     // Port data for AutoBalanceStabilizer
     int emergency_signal = 0;
@@ -310,7 +288,7 @@ class Stabilizer
 
     hrp::Vector3 current_root_p = hrp::Vector3::Zero();
     hrp::Vector3 target_root_p  = hrp::Vector3::Zero();
-    hrp::Matrix33 current_root_R, target_root_R, prev_act_foot_origin_rot, prev_ref_foot_origin_rot, target_foot_origin_rot, ref_foot_origin_rot, act_Rs;
+    hrp::Matrix33 current_root_R, target_root_R, prev_ref_foot_origin_rot, target_foot_origin_rot, ref_foot_origin_rot, act_Rs;
     std::vector <hrp::Vector3> target_ee_p, rel_ee_pos, act_ee_p, projected_normal, act_force, ref_force, ref_moment;
     std::vector <hrp::Matrix33> target_ee_R, rel_ee_rot, act_ee_R;
     std::vector<std::string> rel_ee_name;
@@ -324,7 +302,6 @@ class Stabilizer
     hrp::Vector3 ref_cog      = hrp::Vector3::Zero();
     hrp::Vector3 prev_ref_cog = hrp::Vector3::Zero();
     hrp::Vector3 act_cog      = hrp::Vector3::Zero();
-    hrp::Vector3 prev_act_cog = hrp::Vector3::Zero();
 
     hrp::Vector3 ref_cogvel = hrp::Vector3::Zero();
     hrp::Vector3 act_cogvel = hrp::Vector3::Zero();
@@ -339,14 +316,12 @@ class Stabilizer
     hrp::Vector3 sbp_cog_offset = hrp::Vector3::Zero();
 
     std::array<hrp::Vector3, 2> foot_origin_offset{{hrp::Vector3::Zero(), hrp::Vector3::Zero()}}; // TODO: delete
-    std::vector<double> prev_act_force_z;
     double zmp_origin_off;
     double transition_smooth_gain;
     double d_pos_z_root;
     double limb_stretch_avoidance_time_const = 1.5;
     std::array<double, 2> limb_stretch_avoidance_vlimit; // TODO: 2脚のみ
     std::array<double, 2> root_rot_compensation_limit{{deg2rad(90.0), deg2rad(90.0)}};
-    std::unique_ptr<FirstOrderLowPassFilter<hrp::Vector3>> act_cogvel_filter;
     // TODO: Paramという構造体にまとめて、Serviceはここに含めない
     OpenHRP::AutoBalanceStabilizerService::STAlgorithm st_algorithm = OpenHRP::AutoBalanceStabilizerService::EEFM;
     std::unique_ptr<SimpleZMPDistributor> szd;

@@ -32,6 +32,7 @@
 #include "FullbodyInverseKinematicsSolver.h"
 #include "GaitGenerator.h"
 #include "Stabilizer.h"
+#include "StateEstimator.h"
 // Service implementation headers
 // <rtc-template block="service_impl_h">
 #include "AutoBalanceStabilizerService_impl.h"
@@ -327,7 +328,8 @@ class AutoBalanceStabilizer : public RTC::DataFlowComponentBase
     // -- Functions for OpenRTM port --
 
     void updateBodyParams();
-    std::vector<hrp::LinkConstraint> readContactPointsFromProps(const RTC::Properties& prop);
+    void fixLegToCoords();
+    std::vector<hrp::LinkConstraint> readContactPointsFromProps(const RTC::Properties& prop, std::vector<int>& contacts_link_indices);
 
     // void addBodyConstraint(std::vector<hrp::LinkConstraint>& constraints,
     //                        const hrp::BodyPtr& _robot);
@@ -388,6 +390,9 @@ class AutoBalanceStabilizer : public RTC::DataFlowComponentBase
     std::vector<double> control_swing_support_time; // TODO: delete
 
     std::unique_ptr<hrp::Stabilizer> st;
+
+    // for se
+    std::shared_ptr<hrp::StateEstimator> act_se;
 
     // for gg
     std::unique_ptr<hrp::GaitGenerator> gg;

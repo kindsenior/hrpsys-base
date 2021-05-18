@@ -156,6 +156,40 @@ hrp::Matrix33 ConstraintsWithCount::calcCOPRotationFromConstraints(const LinkCon
     return cop_quat.toRotationMatrix();
 }
 
+hrp::Vector3 ConstraintsWithCount::calcCOPFromModel(const hrp::BodyPtr& _robot) const
+{
+    hrp::Vector3 cop_pos = hrp::Vector3::Zero();
+    double sum_weight = 0;
+
+    for (const LinkConstraint& constraint : constraints) {
+        if (constraint.getConstraintType() >= LinkConstraint::FLOAT) continue;
+        const double weight = constraint.getCOPWeight();
+        const hrp::Link* const link = _robot->link(constraint.getLinkId());
+        cop_pos += constraint.calcActualTargetPosFromLinkState(link->p, link->R) * weight;
+        sum_weight += weight;
+    }
+    if (sum_weight > 0) cop_pos /= sum_weight;
+
+    return cop_pos;
+}
+
+hrp::Matrix33 ConstraintsWithCount::calcCOPRotFromModel(const hrp::BodyPtr& _robot) const
+{
+    Eigen::Quaternion<double> cop_quat = Eigen::Quaternion<double>::Identity();
+    double sum_weight = 0;
+
+    for (const LinkConstraint& constraint : constraints) {
+        const double weight = constraint.getCOPWeight();
+        if (constraint.getConstraintType() >= LinkConstraint::FLOAT || weight == 0 /* to avoid zero division */) continue;
+        sum_weight += weight;
+        const hrp::Link* const link = _robot->link(constraint.getLinkId());
+        const Eigen::Quaternion<double> contact_quat(constraint.calcActualTargetRotFromLinkState(link->R));
+        cop_quat = cop_quat.slerp(weight / sum_weight, contact_quat);
+    }
+
+    return cop_quat.toRotationMatrix();
+}
+
 int ConstraintsWithCount::getConstraintIndexFromLinkId(const int id) const
 {
     for (size_t idx = 0; idx < constraints.size(); ++idx) {

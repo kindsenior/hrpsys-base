@@ -143,6 +143,7 @@ class GaitGenerator
         const size_t index = getConstraintIndexFromCount(constraints_list, count);
         return constraints_list[index];
     }
+    const size_t getCurConstIdx() { return cur_const_idx; };
     const std::vector<ConstraintsWithCount>& getConstraintsList() const { return constraints_list; }
     void modifyConstraintsTarget(const size_t cur_count,
                                  const size_t cwc_idx_from_current,
@@ -163,12 +164,13 @@ class GaitGenerator
     const hrp::Vector3& getNominalZMP() const { return cog_gen->getNominalZMP(); }
     const hrp::Vector3& getRefEndCP() const { return cog_gen->getRefEndCP(); }
     const hrp::Vector3& getNewRefCP() const { return cog_gen->getNewRefCP(); }
-    const double& getStepRemainTime() const { return cog_gen->getStepRemainTime(); }
-    const double& getConstRemainTime() const { return cog_gen->getConstRemainTime(); }
+    double getStepRemainTime() const { return cog_gen->getStepRemainTime(); }
+    double getConstRemainTime() const { return cog_gen->getConstRemainTime(); }
+    bool getWalkingState() { return cog_gen->getWalkingState(); };
+
+    void setWalkingState(const bool _walking) { cog_gen->setWalkingState(_walking); };
 
     // Todo: Private ?
-    hrp::Vector3 calcReferenceCOPFromModel(const hrp::BodyPtr& _robot, const std::vector<LinkConstraint>& cur_consts) const;
-    hrp::Matrix33 calcReferenceCOPRotFromModel(const hrp::BodyPtr& _robot, const std::vector<LinkConstraint>& cur_consts) const;
     void adjustCOPCoordToTarget(const hrp::BodyPtr& _robot, const size_t count);
 
     // -- RefZMPGenerator --
@@ -327,6 +329,8 @@ class GaitGenerator
     bool startRunning(const double dt, const double g_acc = DEFAULT_GRAVITATIONAL_ACCELERATION);
     bool startJumping(const double dt, const double g_acc = DEFAULT_GRAVITATIONAL_ACCELERATION);
     bool startRunJumpDemo(const double dt, const double g_acc = DEFAULT_GRAVITATIONAL_ACCELERATION);
+
+    void setConstraintToFootCoord(const hrp::BodyPtr& _robot);
 
     // gopos: 接触のCycleを記述したい
     // void goPos(const rats::coordinates& target, const size_t one_step_count,
