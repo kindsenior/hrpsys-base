@@ -603,6 +603,7 @@ module OpenHRP
     boolean setToeContactPoints(in long link_id, in DblSeq3Seq contact_points);
     boolean setHeelContactPoints(in long link_id, in DblSeq3Seq contact_points);
     void setWalkingMode(in WalkingMode mode);
+    void setSwingSupportLinkCycle(in LongSequence swing_link_cycle, in LongSequence support_link_cycle);
 
     /**
      * @brief Walk to the goal position and orientation. Returns without waiting for whole steps to be executed.

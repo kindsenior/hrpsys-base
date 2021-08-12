@@ -119,6 +119,10 @@ class AutoBalanceStabilizer : public RTC::DataFlowComponentBase
         }
     }
 
+    void setSwingSupportLinkCycle(const std::vector<int>& swing_link_cycle, const std::vector<int>& support_link_cycle) {
+        gg->setSwingSupportLinkCycle(swing_link_cycle, support_link_cycle);
+    }
+
     bool goPos(const double x, const double y, const double th);
     bool goVelocity(const double& vx, const double& vy, const double& vth);
     bool goStop();

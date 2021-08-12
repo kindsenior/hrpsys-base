@@ -40,6 +40,8 @@ class AutoBalanceStabilizerService_impl
 
     void setWalkingMode(const OpenHRP::AutoBalanceStabilizerService::WalkingMode mode);
 
+    void setSwingSupportLinkCycle(const OpenHRP::AutoBalanceStabilizerService::LongSequence& swing_link_cycle, const OpenHRP::AutoBalanceStabilizerService::LongSequence& support_link_cycle);
+
     CORBA::Boolean goPos( CORBA::Double x,  CORBA::Double y,  CORBA::Double th);
     // CORBA::Boolean goVelocity( CORBA::Double vx,  CORBA::Double vy,  CORBA::Double vth);
     CORBA::Boolean goStop();

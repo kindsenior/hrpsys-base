@@ -837,9 +837,7 @@ bool GaitGenerator::setHeelContactPoints(const int link_id, const std::vector<hr
 
 // Rot は world base rotを使う ?
 // 元の実装は，支持脚座標を入れ替えながらwhileで進んでいく
-bool GaitGenerator::goPos(const Eigen::Isometry3d& target,
-                          const std::vector<int>& support_link_cycle,
-                          const std::vector<int>& swing_link_cycle)
+bool GaitGenerator::goPos(const Eigen::Isometry3d& target)
 {
     std::vector<ConstraintsWithCount> new_constraints;
 
@@ -932,9 +930,7 @@ bool GaitGenerator::goPos(const Eigen::Isometry3d& target,
     return true;
 }
 
-bool GaitGenerator::setFootSteps(const std::vector<int>& support_link_cycle,
-                                 const std::vector<int>& swing_link_cycle,
-                                 hrp::Vector3 footsteps_pos[],
+bool GaitGenerator::setFootSteps(hrp::Vector3 footsteps_pos[],
                                  Eigen::Quaterniond footsteps_rot[],
                                  int fs_side[],
                                  int length)
@@ -977,9 +973,7 @@ bool GaitGenerator::setFootSteps(const std::vector<int>& support_link_cycle,
     return true;
 }
 
-bool GaitGenerator::setRunningFootSteps(const std::vector<int>& support_link_cycle,
-                                        const std::vector<int>& swing_link_cycle,
-                                        hrp::Vector3 footsteps_pos[],
+bool GaitGenerator::setRunningFootSteps(hrp::Vector3 footsteps_pos[],
                                         Eigen::Quaterniond footsteps_rot[],
                                         int fs_side[],
                                         int length,

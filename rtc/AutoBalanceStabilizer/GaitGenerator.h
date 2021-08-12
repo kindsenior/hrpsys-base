@@ -70,10 +70,8 @@ class GaitGenerator
     std::vector<std::pair<hrp::Vector3, size_t>> ref_zmp_goals;
 
     // Walking cycle
-    std::vector<int> support_limb_cycle; // TODO: std::vector<std::vector<int>>
-    std::vector<int> swing_limb_cycle;
-    // std::vector<std::vector<int>> support_limb_cycle;
-    // std::vector<std::vector<int>> swing_limb_cycle;
+    std::vector<int> support_link_cycle{32, 38}; // TODO: std::vector<std::vector<int>>
+    std::vector<int> swing_link_cycle{38, 32};
     size_t current_cycle = 0;
 
     // Toe-heel parameter
@@ -303,18 +301,17 @@ class GaitGenerator
 
     void setWalkingMode(const WalkingMode mode)      { walking_mode = mode; }
 
-    bool goPos(const Eigen::Isometry3d& target,
-               const std::vector<int>& support_link_cycle,
-               const std::vector<int>& swing_link_cycle);
-    bool setFootSteps(const std::vector<int>& support_link_cycle,
-                      const std::vector<int>& swing_link_cycle,
-                      hrp::Vector3 footsteps_pos[],
+    void setSwingSupportLinkCycle(const std::vector<int>& _swing_link_cycle, const std::vector<int>& _support_link_cycle) {
+        swing_link_cycle = _swing_link_cycle;
+        support_link_cycle = _support_link_cycle;
+    }
+
+    bool goPos(const Eigen::Isometry3d& target);
+    bool setFootSteps(hrp::Vector3 footsteps_pos[],
                       Eigen::Quaterniond footsteps_rot[],
                       int fs_side[],
                       int length);
-    bool setRunningFootSteps(const std::vector<int>& support_link_cycle,
-                             const std::vector<int>& swing_link_cycle,
-                             hrp::Vector3 footsteps_pos[],
+    bool setRunningFootSteps(hrp::Vector3 footsteps_pos[],
                              Eigen::Quaterniond footsteps_rot[],
                              int fs_side[],
                              int length,

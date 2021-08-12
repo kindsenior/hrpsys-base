@@ -91,6 +91,22 @@ void AutoBalanceStabilizerService_impl::setWalkingMode(const OpenHRP::AutoBalanc
     m_autobalancestabilizer->setWalkingMode(mode);
 }
 
+void AutoBalanceStabilizerService_impl::setSwingSupportLinkCycle(const OpenHRP::AutoBalanceStabilizerService::LongSequence& swing_link_cycle, const OpenHRP::AutoBalanceStabilizerService::LongSequence& support_link_cycle)
+{
+    if( swing_link_cycle.length() == support_link_cycle.length() ){
+        size_t numCycles = swing_link_cycle.length();
+        std::vector<int>   swing_cycle(numCycles);
+        std::vector<int> support_cycle(numCycles);
+        for(size_t cycleIdx = 0; cycleIdx < numCycles; ++cycleIdx){
+            swing_cycle[cycleIdx]   =   swing_link_cycle[cycleIdx];
+            support_cycle[cycleIdx] = support_link_cycle[cycleIdx];
+        }
+        m_autobalancestabilizer->setSwingSupportLinkCycle(swing_cycle, support_cycle);
+    } else {
+        std::cerr << "[" << __PRETTY_FUNCTION__ << "] The swing cycle and the support cycle must be the same length" << std::endl;
+    }
+}
+
 CORBA::Boolean AutoBalanceStabilizerService_impl::goPos( CORBA::Double x,  CORBA::Double y,  CORBA::Double th)
 {
     return m_autobalancestabilizer->goPos(x, y, th);

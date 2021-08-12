@@ -1445,15 +1445,7 @@ bool AutoBalanceStabilizer::goPos(const double x, const double y, const double t
     target.linear() = target.linear() * Eigen::AngleAxisd(deg2rad(th), Eigen::Vector3d::UnitZ()).toRotationMatrix();
     std::cerr << "gopos target: " << target.translation().transpose() << std::endl;
 
-    // TODO: confファイルからcycleをよむ
-    // CHIDORI
-    // std::vector<int> support_link_cycle{13, 7};
-    // std::vector<int> swing_link_cycle{7, 13};
-
-    // Blue
-    std::vector<int> support_link_cycle{25, 31};
-    std::vector<int> swing_link_cycle{31, 25};
-    if (!gg->goPos(target, support_link_cycle, swing_link_cycle)) return false;
+    if (!gg->goPos(target)) return false;
 
     Guard guard(m_mutex);
     gg_is_walking = true; // TODO: 自動でgg_is_walkingをfalseにする & constraintsのclear
@@ -1478,14 +1470,6 @@ bool AutoBalanceStabilizer::setFootSteps(const OpenHRP::AutoBalanceStabilizerSer
     // target.translation() += target.linear() * hrp::Vector3(x, y, 0);
     // target.linear() = target.linear() * Eigen::AngleAxisd(deg2rad(th), Eigen::Vector3d::UnitZ()).toRotationMatrix();
 
-    // TODO: confファイルからcycleをよむ
-    // CHIDORI
-    // std::vector<int> support_link_cycle{13, 7};
-    // std::vector<int> swing_link_cycle{7, 13};
-
-    // Blue
-    std::vector<int> support_link_cycle{25, 31};
-    std::vector<int> swing_link_cycle{31, 25};
     int length = fss.length();
     int fs_side[length];        // 0->右 1->左
     Eigen::Isometry3d footstep_coord;
@@ -1523,7 +1507,7 @@ bool AutoBalanceStabilizer::setFootSteps(const OpenHRP::AutoBalanceStabilizerSer
         footsteps_rot[i] = footstep_coord.linear();
     }
 
-    if (!gg->setFootSteps(support_link_cycle, swing_link_cycle, footsteps_pos, footsteps_rot, fs_side, length)) return false;
+    if (!gg->setFootSteps(footsteps_pos, footsteps_rot, fs_side, length)) return false;
 
     Guard guard(m_mutex);
     gg_is_walking = true; // TODO: 自動でgg_is_walkingをfalseにする & constraintsのclear
@@ -1545,15 +1529,6 @@ bool AutoBalanceStabilizer::setRunningFootSteps(const OpenHRP::AutoBalanceStabil
 
     const hrp::ConstraintsWithCount& cur_constraints = gg->getCurrentConstraints(loop);
     Eigen::Isometry3d start_coord = cur_constraints.calcCOPCoord();
-
-    // TODO: confファイルからcycleをよむ
-    // CHIDORI
-    // std::vector<int> support_link_cycle{13, 7};
-    // std::vector<int> swing_link_cycle{7, 13};
-
-    // Blue
-    std::vector<int> support_link_cycle{25, 31}; // なんで要らなくなった？
-    std::vector<int> swing_link_cycle{31, 25};
 
     int length = fss.length();
     int fs_side[length];        // 0->右 1->左
@@ -1593,7 +1568,7 @@ bool AutoBalanceStabilizer::setRunningFootSteps(const OpenHRP::AutoBalanceStabil
     }
 
     // if (!gg->setRunningFootSteps(support_link_cycle, swing_link_cycle, footsteps_pos, footsteps_rot, fs_side, length, m_dt)) return false;
-    if (!gg->setRunningFootSteps(support_link_cycle, swing_link_cycle, footsteps_pos, footsteps_rot, fs_side, length, m_dt)) return false;
+    if (!gg->setRunningFootSteps(footsteps_pos, footsteps_rot, fs_side, length, m_dt)) return false;
 
     Guard guard(m_mutex);
     gg_is_walking = true; // TODO: 自動でgg_is_walkingをfalseにする & constraintsのclear
@@ -1617,15 +1592,6 @@ bool AutoBalanceStabilizer::setJumpingFootSteps(const OpenHRP::AutoBalanceStabil
 
     const hrp::ConstraintsWithCount& cur_constraints = gg->getCurrentConstraints(loop);
     Eigen::Isometry3d start_coord = cur_constraints.calcCOPCoord();
-
-    // TODO: confファイルからcycleをよむ
-    // CHIDORI
-    // std::vector<int> support_link_cycle{13, 7};
-    // std::vector<int> swing_link_cycle{7, 13};
-
-    // Blue
-    std::vector<int> support_link_cycle{25, 31};
-    std::vector<int> swing_link_cycle{31, 25};
 
     int length = fss.length();
     std::vector<int> fs_num(length);
