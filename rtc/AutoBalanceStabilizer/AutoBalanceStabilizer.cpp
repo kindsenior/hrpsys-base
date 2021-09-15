@@ -93,6 +93,7 @@ AutoBalanceStabilizer::AutoBalanceStabilizer(RTC::Manager* manager)
       m_genAngularMomentumRpyOut("genAngularMomentumRpy", m_genAngularMomentumRpy),
       m_genSbpCogOffsetOut("genSbpCogOffset", m_genSbpCogOffset),
       m_genContactStatesOut("genContactStates", m_genContactStates),
+      m_genContactTypeOut("genContactType", m_genContactType),
 
       // Data from Stabilizer
       m_modTauOut("modTau", m_modTau),
@@ -316,6 +317,7 @@ RTC::ReturnCode_t AutoBalanceStabilizer::onInitialize()
 
         // Debug
         m_genContactStates.data.length(2);
+        m_genContactType.data.length(2);
     }
 
     storeRobotStatesForIK();
@@ -800,10 +802,17 @@ void AutoBalanceStabilizer::writeOutPortData(const hrp::Vector3& base_pos,
         m_genContactStates.tm = m_qRef.tm;
         const auto& cs = gg->getCurrentConstraints(loop);
         for (size_t i = 0; i < m_genContactStates.data.length(); ++i) {
-            m_genContactStates.data[i] = cs.constraints[i].getConstraintType();
-            // m_genContactStates.data[i] = (cs.constraints[i].getConstraintType() == hrp::LinkConstraint::FIX);
+            m_genContactStates.data[i] = cs.constraints[i].getContactState();
         }
         m_genContactStatesOut.write();
+    }
+    {
+        m_genContactType.tm = m_qRef.tm;
+        const auto& cs = gg->getCurrentConstraints(loop);
+        for (size_t i = 0; i < m_genContactType.data.length(); ++i) {
+            m_genContactType.data[i] = cs.constraints[i].getConstraintType();
+        }
+        m_genContactTypeOut.write();
     }
 
     // Data from Stabilizer
