@@ -976,7 +976,7 @@ class HrpsysConfigurator(object):
             self.connectLoggerPort(self.abst, 'genCogAcc')
             self.connectLoggerPort(self.abst, 'genAngularMomentumRpy')
             self.connectLoggerPort(self.abst, 'genSbpCogOffset')
-            self.connectLoggerPort(self.abst, 'genContactStates')
+            self.connectLoggerPort(self.abst, 'genContactType')
             self.connectLoggerPort(self.abst, 'modTau')
             self.connectLoggerPort(self.abst, 'actBaseRpy')
             self.connectLoggerPort(self.abst, 'baseFrameActZmp')

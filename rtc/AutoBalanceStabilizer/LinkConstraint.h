@@ -123,6 +123,7 @@ class LinkConstraint
 
     void setConstraintType(ConstraintType type) { constraint_type = type; }
     ConstraintType getConstraintType() const { return constraint_type; }
+    bool getContactState() const { return constraint_type==FIX || constraint_type==ROTATE || constraint_type==SLIDE; }
 
     std::vector<Eigen::Vector2d> calcContactConvexHull() const;
 

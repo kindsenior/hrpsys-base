@@ -227,8 +227,10 @@ class AutoBalanceStabilizer : public RTC::DataFlowComponentBase
     OutPort<TimedPoint3D> m_genSbpCogOffsetOut;
     TimedPoint3D m_baseFrameGenCp;
     OutPort<TimedPoint3D> m_baseFrameGenCpOut;
-    TimedLongSeq m_genContactStates;
-    OutPort<TimedLongSeq> m_genContactStatesOut;
+    TimedBooleanSeq m_genContactStates;
+    OutPort<TimedBooleanSeq> m_genContactStatesOut;
+    TimedLongSeq m_genContactType;
+    OutPort<TimedLongSeq> m_genContactTypeOut;
     // Data from Stabilizer
     TimedDoubleSeq m_modTau;
     OutPort<TimedDoubleSeq> m_modTauOut;
