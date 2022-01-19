@@ -358,6 +358,8 @@ class AutoBalancer
   interpolator *angular_momentum_interpolator;
   interpolator *roll_weight_interpolator;
   interpolator *pitch_weight_interpolator;
+  interpolator *roll_momentum_interpolator;
+  interpolator *pitch_momentum_interpolator;
   interpolator *go_vel_interpolator;
   interpolator *cog_constraint_interpolator;
   interpolator *limit_cog_interpolator;
@@ -401,6 +403,8 @@ class AutoBalancer
   double cog_z_constraint, touch_wall_retrieve_time, arm_swing_deg;
   bool debug_read_steppable_region;
   rats::coordinates initial_fix_coords;
+  bool was_exceed_q_ref_err_thre;
+  int ik_max_loop;
   double d_wheel_angle, start_d_wheel_angle, wheel_radius;
 };
 
