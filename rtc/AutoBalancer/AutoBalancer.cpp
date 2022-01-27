@@ -1192,7 +1192,7 @@ void AutoBalancer::setABCData2ST()
   }
   for (size_t j = 0; j < st->wrenches.size(); j++) {
     for (size_t i = 0; i < 6; i++) {
-      st->ref_wrenches[j][i] = m_ref_force[j].data[i];
+      st->ref_wrenches[j][i] = m_force[j].data[i];
     }
   }
   for (size_t i = 0; i < st->limbCOPOffset.size(); i++) {
@@ -1222,6 +1222,12 @@ void AutoBalancer::getTargetParameters()
   m_robot->calcForwardKinematics();
   gg->proc_zmp_weight_map_interpolation();
   gg->set_total_mass(m_robot->totalMass());
+  // Set force
+  for (unsigned int i=0; i< m_force.size(); i++) {
+    for (unsigned int j=0; j<6; j++) {
+      m_force[i].data[j] = m_ref_force[i].data[j];
+    }
+  }
   if (control_mode != MODE_IDLE) {
     interpolateLegNamesAndZMPOffsets();
     // Calculate tmp_fix_coords and something
@@ -1302,7 +1308,7 @@ void AutoBalancer::getTargetParameters()
     updateTargetCoordsForHandFixMode (tmp_fix_coords);
     rotateRefForcesForFixCoords (tmp_fix_coords);
     // TODO : see explanation in this function
-    calculateOutputRefForces ();
+    // calculateOutputRefForces ();
     // TODO : see explanation in this function
     updateWalkingVelocityFromHandError(tmp_fix_coords);
     calcReferenceJointAnglesForIK();
@@ -1339,12 +1345,6 @@ void AutoBalancer::getTargetParameters()
       }
       multi_mid_coords(fix_leg_coords, tmp_end_coords_list);
       getOutputParametersForIDLE();
-      // Set force
-      for (unsigned int i=0; i< m_force.size(); i++) {
-          for (unsigned int j=0; j<6; j++) {
-              m_force[i].data[j] = m_ref_force[i].data[j];
-          }
-      }
       is_after_walking = false;
   }
 };
@@ -1352,6 +1352,7 @@ void AutoBalancer::getTargetParameters()
 void AutoBalancer::getOutputParametersForWalking ()
 {
     int contact_cnt = 0;
+    hrp::Vector3 total_force = st->ref_foot_origin_rot.transpose() * (m_robot->totalMass() * gg->get_cog_acc());
     for (std::map<std::string, ABCIKparam>::iterator it = ikp.begin(); it != ikp.end(); it++) {
         size_t idx = contact_states_index_map[it->first];
         // Check whether "it->first" ee_name is included in leg_names. leg_names is equivalent to "swing" + "support" in gg.
@@ -1387,12 +1388,16 @@ void AutoBalancer::getOutputParametersForWalking ()
             m_limbCOPOffset[idx].data.z = default_zmp_offsets[idx](2);
             // Set toe heel ratio which can be used force moment distribution
             m_toeheelRatio.data[idx] = rats::no_using_toe_heel_ratio;
+            total_force -= hrp::Vector3(m_force[idx].data[0], m_force[idx].data[1], m_force[idx].data[2]);
         }
     }
-    if (contact_cnt > 0) {
-      double total_fz = m_robot->totalMass() * gg->get_gravitational_acceleration();
-      for (size_t i = 0; i < m_contactStates.data.length(); i++) {
-        if (m_contactStates.data[i]) m_ref_force[i].data[2] = total_fz / static_cast<double>(contact_cnt);
+    for (std::map<std::string, ABCIKparam>::iterator it = ikp.begin(); it != ikp.end(); it++) {
+      size_t idx = contact_states_index_map[it->first];
+      if (std::find(leg_names.begin(), leg_names.end(), it->first) != leg_names.end()) {
+        for (size_t i = 0; i < 3; i++) {
+          if (m_contactStates.data[idx]) m_force[idx].data[i] = total_force(i) / static_cast<double>(contact_cnt);
+          else m_force[idx].data[i] = 0.0;
+        }
       }
     }
 };
@@ -1400,6 +1405,7 @@ void AutoBalancer::getOutputParametersForWalking ()
 void AutoBalancer::getOutputParametersForABC ()
 {
     int contact_cnt = 0;
+    hrp::Vector3 total_force = st->ref_foot_origin_rot.transpose() * (m_robot->totalMass() * hrp::Vector3(0, 0, gg->get_gravitational_acceleration()));
     // double support by default
     for (std::map<std::string, ABCIKparam>::iterator it = ikp.begin(); it != ikp.end(); it++) {
         size_t idx = contact_states_index_map[it->first];
@@ -1414,10 +1420,11 @@ void AutoBalancer::getOutputParametersForABC ()
         std::vector<std::string>::const_iterator dst = std::find_if(leg_names.begin(), leg_names.end(), (boost::lambda::_1 == it->first));
         if (dst != leg_names.end()) {
             m_contactStates.data[idx] = true;
+            contact_cnt++;
         } else {
             m_contactStates.data[idx] = false;
+            total_force -= hrp::Vector3(m_force[idx].data[0], m_force[idx].data[1], m_force[idx].data[2]);
         }
-        if (m_contactStates.data[idx]) contact_cnt++;
         // controlSwingSupportTime is not used while double support period, 1.0 is neglected
         m_controlSwingSupportTime.data[idx] = 1.0;
         // Set limbCOPOffset
@@ -1427,10 +1434,13 @@ void AutoBalancer::getOutputParametersForABC ()
         // Set toe heel ratio is not used while double support
         m_toeheelRatio.data[idx] = rats::no_using_toe_heel_ratio;
     }
-    if (contact_cnt > 0) {
-      double total_fz = m_robot->totalMass() * gg->get_gravitational_acceleration();
-      for (size_t i = 0; i < m_contactStates.data.length(); i++) {
-        if (m_contactStates.data[i]) m_ref_force[i].data[2] = total_fz / static_cast<double>(contact_cnt);
+    for (std::map<std::string, ABCIKparam>::iterator it = ikp.begin(); it != ikp.end(); it++) {
+      size_t idx = contact_states_index_map[it->first];
+      if (std::find(leg_names.begin(), leg_names.end(), it->first) != leg_names.end()) {
+        for (size_t i = 0; i < 3; i++) {
+          if (m_contactStates.data[idx]) m_force[idx].data[i] = total_force(i) / static_cast<double>(contact_cnt);
+          else m_force[idx].data[i] = 0.0;
+        }
       }
     }
 };
@@ -1438,19 +1448,25 @@ void AutoBalancer::getOutputParametersForABC ()
 void AutoBalancer::getOutputParametersForJumping ()
 {
   int contact_cnt = 0;
+  hrp::Vector3 total_force = st->ref_foot_origin_rot.transpose() * (m_robot->totalMass() * gg->get_cog_acc());
   for (std::map<std::string, ABCIKparam>::iterator it = ikp.begin(); it != ikp.end(); it++) {
     size_t idx = contact_states_index_map[it->first];
-    // if(gg->is_jumping_phase()) m_contactStates.data[idx] = false; // TODO: fix bug on st
+    // if (gg->is_jumping_phase()) m_contactStates.data[idx] = false; // TODO: fix bug on st
     if (m_contactStates.data[idx]) contact_cnt++;
     // Check whether "it->first" ee_name is included in leg_names. leg_names is equivalent to "swing" + "support" in gg.
     if (std::find(leg_names.begin(), leg_names.end(), it->first) != leg_names.end()) {
       gg->get_jump_ee_coords_from_ee_name(it->second.target_p0, it->second.target_r0, it->first);
+    } else {
+      total_force -= hrp::Vector3(m_force[idx].data[0], m_force[idx].data[1], m_force[idx].data[2]);
     }
   }
-  if (contact_cnt > 0) {
-    double total_fz = m_robot->totalMass() * (gg->get_gravitational_acceleration() + gg->get_cog_acc()(2));
-    for (size_t i = 0; i < m_contactStates.data.length(); i++) {
-      if (m_contactStates.data[i]) m_ref_force[i].data[2] = total_fz / static_cast<double>(contact_cnt);
+  for (std::map<std::string, ABCIKparam>::iterator it = ikp.begin(); it != ikp.end(); it++) {
+    size_t idx = contact_states_index_map[it->first];
+    if (std::find(leg_names.begin(), leg_names.end(), it->first) != leg_names.end()) {
+      for (size_t i = 0; i < 3; i++) {
+        if (m_contactStates.data[idx]) m_force[idx].data[i] = total_force(i) / static_cast<double>(contact_cnt);
+        else m_force[idx].data[i] = 0.0;
+      }
     }
   }
 }
@@ -1992,7 +2008,7 @@ void AutoBalancer::solveFullbodyIK ()
         // 上半身関節角のq_refへの緩い拘束
         double upper_weight, fly_ratio = 1e-10, normal_ratio = 2e-6;
         if (is_natural_walk) normal_ratio = 1e-5;
-        if (ikp.size() >= 4 && (ikp["rarm"].is_active || ikp["larm"].is_active)) normal_ratio = 0.0;
+        if (ikp.size() >= 4 && (ikp["rarm"].is_active || ikp["larm"].is_active)) normal_ratio = 1e-6;
         if (use_roll_flywheel || use_pitch_flywheel) {
           if (!prev_roll_state && !prev_pitch_state) {
             if (angular_momentum_interpolator->isEmpty()) upper_weight = normal_ratio;
@@ -3400,6 +3416,7 @@ void AutoBalancer::setStabilizerParam(const OpenHRP::AutoBalancerService::Stabil
   st->use_limb_stretch_avoidance = i_param.use_limb_stretch_avoidance;
   st->use_zmp_truncation = i_param.use_zmp_truncation;
   st->use_force_sensor = i_param.use_force_sensor;
+  gg->set_use_force_sensor(st->use_force_sensor);
   st->use_footguided_stabilizer = i_param.use_footguided_stabilizer;
   gg->footguided_balance_time_const = st->footguided_balance_time_const = i_param.footguided_balance_time_const;
   for (size_t i = 0; i < 2; i++) {
