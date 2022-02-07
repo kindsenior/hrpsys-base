@@ -407,6 +407,7 @@ class AutoBalancer
   bool was_exceed_q_ref_err_thre;
   int ik_max_loop;
   double d_wheel_angle, start_d_wheel_angle, wheel_radius;
+  std::map<std::string, size_t> wheel_id;
 };
 
 

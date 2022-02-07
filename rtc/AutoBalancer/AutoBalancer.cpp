@@ -593,7 +593,10 @@ RTC::ReturnCode_t AutoBalancer::onInitialize()
 
     debug_read_steppable_region = false;
 
-    wheel_radius = 0.063; // TODO: use model/idl
+    // TODO: use model/idl
+    wheel_radius = 0.063;
+    wheel_id["rleg"] = 6;
+    wheel_id["lleg"] = 13;
     d_wheel_angle = 0.0;
     start_d_wheel_angle = 0.0;
 
@@ -880,9 +883,8 @@ RTC::ReturnCode_t AutoBalancer::onExecute(RTC::UniqueId ec_id)
         // overwirte wheel angle
         if (gg->is_wheeling) d_wheel_angle = start_d_wheel_angle + gg->get_cur_wheel_pos_x() / wheel_radius;
         else start_d_wheel_angle = d_wheel_angle;
-        // TODO: use model/idl
-        m_robot->joint(6)->q = m_qRef.data[6] + d_wheel_angle;
-        m_robot->joint(13)->q = m_qRef.data[13] + d_wheel_angle;
+        m_robot->joint(wheel_id["rleg"])->q = m_qRef.data[wheel_id["rleg"]] + d_wheel_angle;
+        m_robot->joint(wheel_id["lleg"])->q = m_qRef.data[wheel_id["lleg"]] + d_wheel_angle;
       } else {
         if (!emergency_transition_interpolator->isEmpty()) {
           double tmp_ratio;
