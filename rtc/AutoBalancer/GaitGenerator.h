@@ -1136,6 +1136,7 @@ namespace rats
     double stair_step_time;
     double footguided_balance_time_const;
     size_t num_preview_step;
+    double total_external_force_z;
     bool is_jumping;
     bool is_wheeling;
 #ifndef HAVE_MAIN
