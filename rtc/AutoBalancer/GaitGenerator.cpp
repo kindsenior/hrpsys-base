@@ -748,7 +748,7 @@ namespace rats
       delete foot_guided_controller_ptr;
       foot_guided_controller_ptr = NULL;
     }
-    foot_guided_controller_ptr = new foot_guided_controller<3>(dt, cur_refcog(2) - initial_wheel_midcoords.pos(2), cur_refcog, total_mass, fg_zmp_cutoff_freq, gravitational_acceleration);
+    foot_guided_controller_ptr = new foot_guided_controller<3>(dt, cur_refcog(2) - initial_wheel_midcoords.pos(2), cur_refcog, total_mass, fg_zmp_cutoff_freq, total_external_force_z, gravitational_acceleration);
     foot_guided_controller_ptr->set_dc_off(hrp::Vector3::Zero());
     if (!double_support_zmp_interpolator->isEmpty()) double_support_zmp_interpolator->clear();
   }
@@ -1195,8 +1195,8 @@ namespace rats
     // calc_cur_cp
     {
       cur_cogvel += (wheel_midcoords.pos - prev_wheel_pos) / dt;
-      double cur_omega = std::sqrt(gravitational_acceleration / dz(2));
-      double ref_omega = std::sqrt(gravitational_acceleration / dz(2));
+      double cur_omega = std::sqrt((gravitational_acceleration - total_external_force_z/total_mass) / dz(2));
+      double ref_omega = std::sqrt((gravitational_acceleration - total_external_force_z/total_mass) / dz(2));
       act_cp = cur_cog + cur_cogvel / cur_omega + dc_off;
       ref_cp = cur_refcog + cur_refcogvel / ref_omega;
       prev_wheel_pos = wheel_midcoords.pos;
@@ -1206,7 +1206,7 @@ namespace rats
     double remain_time = 0.0;
     double traj_remain_time = wheel_interpolator->get_remain_time();
 
-    foot_guided_controller_ptr->set_dz(dz(2));
+    foot_guided_controller_ptr->set_dz(dz(2), total_external_force_z);
     foot_guided_controller_ptr->set_x_k(cur_refcog, cur_refcogvel);
     if (use_act_states) foot_guided_controller_ptr->set_act_x_k(cur_cog, cur_cogvel, false);
     else foot_guided_controller_ptr->set_act_x_k(cur_refcog, cur_refcogvel, false);

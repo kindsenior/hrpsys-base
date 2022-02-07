@@ -2108,6 +2108,10 @@ void AutoBalancer::calcTotalExternalForceZ ()
       total_external_force_z += m_ref_force[idx].data[2];
     }
   }
+  if ( use_force == MODE_ADDITIONAL_FORCE ) {
+    size_t idx = ref_forces.size() - 1;
+    total_external_force_z += m_ref_force[idx].data[2];
+  }
   gg->total_external_force_z = total_external_force_z;
   st->total_external_force_z = total_external_force_z;
 }
