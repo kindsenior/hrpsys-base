@@ -325,6 +325,7 @@ class AutoBalancer
   void calcTouchoffRemainTime();
   void limbStretchAvoidanceControl();
   void calcTotalExternalForceZ();
+  void fixActCogVelForWheel();
 
   // for gg
   typedef boost::shared_ptr<rats::gait_generator> ggPtr;
@@ -408,6 +409,7 @@ class AutoBalancer
   int ik_max_loop;
   double d_wheel_angle, start_d_wheel_angle, wheel_radius;
   std::map<std::string, size_t> wheel_id;
+  std::map<std::string, double> prev_wheel_pos;
 };
 
 

@@ -597,6 +597,8 @@ RTC::ReturnCode_t AutoBalancer::onInitialize()
     wheel_radius = 0.063;
     wheel_id["rleg"] = 6;
     wheel_id["lleg"] = 13;
+    prev_wheel_pos["rleg"] = 0.0;
+    prev_wheel_pos["lleg"] = 0.0;
     d_wheel_angle = 0.0;
     start_d_wheel_angle = 0.0;
 
@@ -823,6 +825,7 @@ RTC::ReturnCode_t AutoBalancer::onExecute(RTC::UniqueId ec_id)
       // For parameters
       setActData2ST();
       st->getActualParameters();
+      fixActCogVelForWheel();
       gg->set_act_contact_states(st->act_contact_states);
       calcTotalExternalForceZ();
       // if (!go_vel_interpolator->isEmpty()) {
@@ -865,6 +868,13 @@ RTC::ReturnCode_t AutoBalancer::onExecute(RTC::UniqueId ec_id)
 //        }
 //        updateInvDynStateBuffer(idsb);
 
+        // overwirte wheel angle
+        {
+          if (gg->is_wheeling) d_wheel_angle = start_d_wheel_angle + gg->get_cur_wheel_pos_x() / wheel_radius;
+          else start_d_wheel_angle = d_wheel_angle;
+          m_robot->joint(wheel_id["rleg"])->q = m_qRef.data[wheel_id["rleg"]] + d_wheel_angle;
+          m_robot->joint(wheel_id["lleg"])->q = m_qRef.data[wheel_id["lleg"]] + d_wheel_angle;
+        }
         rel_ref_zmp = m_robot->rootLink()->R.transpose() * (ref_zmp - m_robot->rootLink()->p);
         fik->storeCurrentParameters();
 
@@ -879,12 +889,6 @@ RTC::ReturnCode_t AutoBalancer::onExecute(RTC::UniqueId ec_id)
             m_robot->joint(i)->q = (1-tmp_ratio) * m_qTouchWall.data[i] + tmp_ratio * m_robot->joint(i)->q;
           }
         }
-
-        // overwirte wheel angle
-        if (gg->is_wheeling) d_wheel_angle = start_d_wheel_angle + gg->get_cur_wheel_pos_x() / wheel_radius;
-        else start_d_wheel_angle = d_wheel_angle;
-        m_robot->joint(wheel_id["rleg"])->q = m_qRef.data[wheel_id["rleg"]] + d_wheel_angle;
-        m_robot->joint(wheel_id["lleg"])->q = m_qRef.data[wheel_id["lleg"]] + d_wheel_angle;
       } else {
         if (!emergency_transition_interpolator->isEmpty()) {
           double tmp_ratio;
@@ -2116,6 +2120,26 @@ void AutoBalancer::calcTotalExternalForceZ ()
   }
   gg->total_external_force_z = total_external_force_z;
   st->total_external_force_z = total_external_force_z;
+}
+
+void AutoBalancer::fixActCogVelForWheel ()
+{
+  double wheel_base_vel = 0.0;
+  int contact_cnt = 0;
+  for (std::map<std::string, ABCIKparam>::iterator it = ikp.begin(); it != ikp.end(); it++) {
+    if (std::find(leg_names.begin(), leg_names.end(), it->first) != leg_names.end()) {
+      const double cur_pos = st->qCurrent[wheel_id[it->first]] * wheel_radius;
+      size_t idx = contact_states_index_map[it->first];
+      if (m_contactStates.data[idx]) {
+        wheel_base_vel += (cur_pos - prev_wheel_pos[it->first]) / m_dt;
+        contact_cnt++;
+      }
+      prev_wheel_pos[it->first] = cur_pos;
+    }
+  }
+  if (gg->is_wheeling) {
+    st->act_cogvel(0) += wheel_base_vel / static_cast<double>(contact_cnt);
+  }
 }
 
 void AutoBalancer::limit_cog (hrp::Vector3& cog)

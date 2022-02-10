@@ -741,7 +741,6 @@ namespace rats
     initial_support_leg = initial_support_leg_steps.front();
     initial_swing_leg = initial_swing_leg_dst_steps.front();
     d_wheel_pos = hrp::Vector3::Zero();
-    prev_wheel_pos = initial_wheel_midcoords.pos;
     final_footstep_pos = hrp::Vector3::Zero();
 
     if ( foot_guided_controller_ptr != NULL ) {
@@ -764,10 +763,6 @@ namespace rats
       was_enlarged_time = false;
     }
     lcg.set_is_single_walking(footstep_nodes_list.size());
-    if (is_wheeling) {
-      cur_cogvel += (wheel_midcoords.pos - prev_wheel_pos) / dt;
-      prev_wheel_pos = wheel_midcoords.pos;
-    }
     hrp::Vector3 cur_refcog, cur_refcogvel, dc_off;
     foot_guided_controller_ptr->get_pos(cur_refcog);
     foot_guided_controller_ptr->get_vel(cur_refcogvel);
@@ -1013,8 +1008,6 @@ namespace rats
         }
       }
 
-      if (is_wheeling && !solved) prev_wheel_pos += final_footstep_pos;
-
       prev_act_cp = act_cp;
       tmp[17] = fxy(0);
       tmp[18] = fxy(1);
@@ -1194,12 +1187,10 @@ namespace rats
 
     // calc_cur_cp
     {
-      cur_cogvel += (wheel_midcoords.pos - prev_wheel_pos) / dt;
       double cur_omega = std::sqrt((gravitational_acceleration - total_external_force_z/total_mass) / dz(2));
       double ref_omega = std::sqrt((gravitational_acceleration - total_external_force_z/total_mass) / dz(2));
       act_cp = cur_cog + cur_cogvel / cur_omega + dc_off;
       ref_cp = cur_refcog + cur_refcogvel / ref_omega;
-      prev_wheel_pos = wheel_midcoords.pos;
     }
 
     // calc cog
