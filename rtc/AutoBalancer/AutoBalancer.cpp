@@ -1861,7 +1861,7 @@ void AutoBalancer::solveFullbodyIK ()
     }
   }
 
-  if (gg->use_act_states && is_stop_early_foot) stopFootForEarlyTouchDown();
+  if (gg->use_act_states && is_stop_early_foot && st->use_force_sensor) stopFootForEarlyTouchDown();
 
   limbStretchAvoidanceControl();
 
