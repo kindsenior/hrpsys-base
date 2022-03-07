@@ -163,7 +163,7 @@ RTC::ReturnCode_t AutoBalancer::onInitialize()
     addOutPort("baseTformOut", m_baseTformOut);
     addOutPort("tmpOut", m_tmpOut);
     addOutPort("currentLandingPosOut", m_currentLandingPosOut);
-    addOutPort("diffStaticBalancePointOffset", m_diffFootOriginExtMomentOut);
+    addOutPort("diffFootOriginExtMoment", m_diffFootOriginExtMomentOut);
     addOutPort("allEEComp", m_allEECompOut);
     addOutPort("basePoseOut", m_basePoseOut);
     addOutPort("accRef", m_accRefOut);
@@ -229,7 +229,7 @@ RTC::ReturnCode_t AutoBalancer::onInitialize()
     m_tau.data.length(m_robot->numJoints());
     m_qTouchWall.data.length(m_robot->numJoints());
     m_baseTform.data.length(12);
-    m_tmp.data.length(27);
+    m_tmp.data.length(33);
     diff_q.resize(m_robot->numJoints());
     // for debug output
     m_originRefZmp.data.x = m_originRefZmp.data.y = m_originRefZmp.data.z = 0.0;
@@ -801,22 +801,35 @@ RTC::ReturnCode_t AutoBalancer::onExecute(RTC::UniqueId ec_id)
       if ((gg->get_support_leg_names().front() == "rleg" && m_landingHeight.data.l_r == 0) ||
           (gg->get_support_leg_names().front() == "lleg" && m_landingHeight.data.l_r == 1))
         {
+          m_tmp.data[27] = m_landingHeight.data.l_r == 0 ? 1 : 2;
           hrp::Vector3 pos(hrp::Vector3(m_landingHeight.data.x, m_landingHeight.data.y, m_landingHeight.data.z));
           hrp::Vector3 normal(hrp::Vector3(m_landingHeight.data.nx, m_landingHeight.data.ny, m_landingHeight.data.nz));
           if (isfinite(pos(2))) {
             gg->set_is_vision_updated(true);
             gg->set_rel_landing_height(pos);
             gg->set_rel_landing_normal(normal);
+            m_tmp.data[29] = pos(0);
+            m_tmp.data[30] = pos(1);
+            m_tmp.data[31] = pos(2);
           }
+        } else {
+          m_tmp.data[27] = m_landingHeight.data.l_r == 0 ? 3 : 4;
         }
+    } else {
+      m_tmp.data[27] = 0;
     }
     if (m_steppableRegionIn.isNew()) {
       m_steppableRegionIn.read();
       if ((gg->get_support_leg_names().front() == "rleg" && m_steppableRegion.data.l_r == 0) ||
           (gg->get_support_leg_names().front() == "lleg" && m_steppableRegion.data.l_r == 1))
         {
+          m_tmp.data[28] = m_steppableRegion.data.l_r == 0 ? 1 : 2;
           gg->set_steppable_region(m_steppableRegion);
+        } else {
+          m_tmp.data[28] = m_steppableRegion.data.l_r == 0 ? 3 : 4;
         }
+    } else {
+      m_tmp.data[28] = 0;
     }
 
     // Calculation
@@ -1030,6 +1043,7 @@ RTC::ReturnCode_t AutoBalancer::onExecute(RTC::UniqueId ec_id)
       tmp_zmp = st->ref_foot_origin_pos + st->ref_foot_origin_rot * st->act_cmp;
       m_tmp.data[23] = gg->get_tmp(21);
       m_tmp.data[24] = gg->get_tmp(22);
+      m_tmp.data[32] = gg->debug_steppable_height;
       m_tmp.tm = m_qRef.tm;
       m_tmpOut.write();
       if (gg_is_walking) {
@@ -1955,7 +1969,7 @@ void AutoBalancer::solveFullbodyIK ()
         bool use_roll_flywheel = gg->get_use_roll_flywheel() && !was_exceed_q_ref_err_thre, use_pitch_flywheel = gg->get_use_pitch_flywheel() && !was_exceed_q_ref_err_thre;
         if (use_roll_flywheel) tmp.targetRpy(0) = (prev_momentum + tmp_tau * m_dt)(0);//reference angular momentum
         if (use_pitch_flywheel) tmp.targetRpy(1) = (prev_momentum + tmp_tau * m_dt)(1);//reference angular momentum
-        double roll_weight, pitch_weight, fly_weight = 1e-3, normal_weight = 1e-7, weight_fly_interpolator_time = 0.02, weight_normal_interpolator_time = 0.4;
+        double roll_weight, pitch_weight, fly_weight = 1e-3, normal_weight = 1e-7, weight_fly_interpolator_time = 0.1, weight_normal_interpolator_time = 0.4;
         if (gg_is_walking && is_natural_walk) normal_weight = 0.0;
         if (gg->is_jumping) fly_weight = 1;
         if (ikp.size() >= 4 && (ikp["rarm"].is_active || ikp["larm"].is_active)) fly_weight = 1e-6;
@@ -2862,7 +2876,11 @@ bool AutoBalancer::setGaitGeneratorParam(const OpenHRP::AutoBalancerService::Gai
   gg->set_use_toe_heel_auto_set(i_param.use_toe_heel_auto_set);
   gg->set_zmp_weight_map(boost::assign::map_list_of<leg_type, double>(RLEG, i_param.zmp_weight_map[0])(LLEG, i_param.zmp_weight_map[1])(RARM, i_param.zmp_weight_map[2])(LARM, i_param.zmp_weight_map[3]));
   gg->set_optional_go_pos_finalize_footstep_num(i_param.optional_go_pos_finalize_footstep_num);
-  gg->set_overwritable_footstep_index_offset(i_param.overwritable_footstep_index_offset);
+  if (i_param.overwritable_footstep_index_offset < 4) {
+    gg->set_overwritable_footstep_index_offset(i_param.overwritable_footstep_index_offset);
+  } else {
+    std::cerr << "[" << m_profile.instance_name << "]   overwritable_footstep_index_offset must be less than 4" << std::endl;
+  }
   gg->set_leg_margin(i_param.leg_margin);
   gg->set_safe_leg_margin(i_param.safe_leg_margin);
   gg->set_vertices_from_leg_margin();

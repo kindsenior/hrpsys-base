@@ -325,7 +325,7 @@ namespace rats
   void leg_coords_generator::calc_ratio_from_double_support_ratio (const double default_double_support_ratio_before, const double default_double_support_ratio_after)
   {
     int support_len_before = one_step_count * default_double_support_ratio_before;
-    int support_len_after = next_one_step_count * default_double_support_ratio_after;
+    int support_len_after = one_step_count * default_double_support_ratio_after;
     // int support_len = 2*static_cast<int>(one_step_count * default_double_support_ratio * 0.5);
     int swing_len = one_step_count - support_len_before - support_len_after;
     int current_swing_len = lcg_count - support_len_before;
@@ -790,7 +790,9 @@ namespace rats
           velocity_mode_flg = VEL_IDLING;
           if (is_stable_go_stop_mode) is_emergency_step = true;
         }
-        if (overwritable_footstep_index_offset != 0) overwrite_footstep_nodes_list.push_back(footstep_nodes_list[lcg.get_footstep_index()]);
+        for (size_t i = 0; i < overwritable_footstep_index_offset; i++) {
+          overwrite_footstep_nodes_list.push_back(footstep_nodes_list[lcg.get_footstep_index() + i]);
+        }
         for (size_t i = 0; i < cv.size(); i++) {
             std::vector<step_node> tmp_fsn;
             for (size_t j = 0; j < cv.at(i).size(); j++) {
@@ -1792,6 +1794,7 @@ namespace rats
     if (!was_read_steppable_height) {
         was_read_steppable_height = true;
         cur_fs.worldcoords.pos(2) = tmp_height;
+        debug_steppable_height = tmp_height;
     }
 
     // world frame
@@ -2557,9 +2560,9 @@ namespace rats
     }
   };
 
-  void gait_generator::overwrite_refzmp_queue(const std::vector< std::vector<step_node> >& fnsl, const hrp::Vector3& cur_cog, const hrp::Vector3& cur_cogvel, const hrp::Vector3& cur_refcog, const hrp::Vector3& cur_refcogvel, const hrp::Vector3& target_cog, const bool& update_vel)
+  void gait_generator::overwrite_refzmp_queue(const std::vector< std::vector<step_node> >& fnsl, const hrp::Vector3& cur_cog, const hrp::Vector3& cur_cogvel, const hrp::Vector3& cur_refcog, const hrp::Vector3& cur_refcogvel, const hrp::Vector3& target_cog)
   {
-    size_t idx = (update_vel ? get_overwritable_index() : lcg.get_footstep_index());
+    size_t idx = lcg.get_footstep_index();
     footstep_nodes_list.erase(footstep_nodes_list.begin()+idx, footstep_nodes_list.end());
 
     /* add new next steps ;; the number of next steps is fnsl.size() */
@@ -2573,11 +2576,7 @@ namespace rats
     rg.remove_refzmp_cur_list_over_length(idx);
     /*   reset index and counter */
     rg.set_indices(idx);
-    if (overwritable_footstep_index_offset == 0 || !update_vel) {
-        rg.set_refzmp_count(lcg.get_lcg_count()); // Start refzmp_count from current remaining footstep count of swinging.
-    } else {
-        rg.set_refzmp_count(static_cast<size_t>(fnsl[0][0].step_time/dt)); // Start refzmp_count from step length of first overwrite step
-    }
+    rg.set_refzmp_count(lcg.get_lcg_count()); // Start refzmp_count from current remaining footstep count of swinging.
     /*   reset refzmp */
     for (size_t i = 0; i < fnsl.size(); i++) {
         if (emergency_flg == EMERGENCY_STOP)
@@ -2601,12 +2600,7 @@ namespace rats
     }
     /* Overwrite refzmp index in preview contoroller queue */
     size_t queue_size = preview_controller_ptr->get_preview_queue_size();
-    size_t overwrite_idx;
-    if (overwritable_footstep_index_offset == 0 || !update_vel) {
-      overwrite_idx = 0; // Overwrite all queue
-    } else {
-      overwrite_idx = lcg.get_lcg_count(); // Overwrite queue except current footstep
-    }
+    size_t overwrite_idx = 0; // Overwrite all queue
     if (is_preview) {
       /* fill preview controller queue by new refzmp */
       hrp::Vector3 rzmp;
