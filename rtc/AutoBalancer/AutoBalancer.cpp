@@ -594,9 +594,11 @@ RTC::ReturnCode_t AutoBalancer::onInitialize()
     debug_read_steppable_region = false;
 
     // TODO: use model/idl
-    wheel_radius = 0.063;
-    wheel_id["rleg"] = 6;
-    wheel_id["lleg"] = 13;
+    wheel_radius = 0.04;
+    wheel_id["rleg"] = 37;
+    wheel_id["lleg"] = 38;
+    wheel_id["rleg_rear"] = 39;
+    wheel_id["lleg_rear"] = 40;
     prev_wheel_pos["rleg"] = 0.0;
     prev_wheel_pos["lleg"] = 0.0;
     d_wheel_angle = 0.0;
@@ -887,6 +889,8 @@ RTC::ReturnCode_t AutoBalancer::onExecute(RTC::UniqueId ec_id)
           else start_d_wheel_angle = d_wheel_angle;
           m_robot->joint(wheel_id["rleg"])->q = m_qRef.data[wheel_id["rleg"]] + d_wheel_angle;
           m_robot->joint(wheel_id["lleg"])->q = m_qRef.data[wheel_id["lleg"]] + d_wheel_angle;
+          m_robot->joint(wheel_id["rleg_rear"])->q = m_qRef.data[wheel_id["rleg_rear"]] + d_wheel_angle;
+          m_robot->joint(wheel_id["lleg_rear"])->q = m_qRef.data[wheel_id["lleg_rear"]] + d_wheel_angle;
         }
         rel_ref_zmp = m_robot->rootLink()->R.transpose() * (ref_zmp - m_robot->rootLink()->p);
         fik->storeCurrentParameters();
